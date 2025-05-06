@@ -1,4 +1,4 @@
-# API de Ventas - FerreMax
+# API de Inventario - FerreMax
 
 Este proyecto es una API RESTful desarrollada en Node.js con Express para gestionar las operaciones de un sistema de ventas, como productos, categorías, marcas, divisas, clientes, pedidos e inventario. Utiliza MySQL como base de datos.
 
