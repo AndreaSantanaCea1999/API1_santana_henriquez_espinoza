@@ -1,0 +1,570 @@
+{
+    "info": {
+      "_postman_id": "bcfc4e5b-d8cf-4939-9a59-38e3bd93e177",
+      "name": "API de Ventas MySQL",
+      "description": "Colección para probar los endpoints de la API de ventas",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Productos",
+        "item": [
+          {
+            "name": "Obtener todos los productos",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/productos",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "productos"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Obtener producto por ID",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/productos/1",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "productos",
+                  "1"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Crear producto",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"Codigo\": \"PROD001\",\n    \"Nombre\": \"Smartphone XYZ\",\n    \"Descripcion\": \"Smartphone de última generación\",\n    \"ID_Categoria\": 1,\n    \"ID_Marca\": 1,\n    \"ID_Divisa\": 1,\n    \"Precio_Venta\": 299990,\n    \"Estado\": \"Activo\"\n}"
+              },
+              "url": {
+                "raw": "http://localhost:3000/api/productos",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "productos"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Actualizar producto",
+            "request": {
+              "method": "PATCH",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"Precio_Venta\": 289990,\n    \"Descuento_Maximo\": 5.00\n}"
+              },
+              "url": {
+                "raw": "http://localhost:3000/api/productos/1",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "productos",
+                  "1"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Eliminar producto",
+            "request": {
+              "method": "DELETE",
+              "url": {
+                "raw": "http://localhost:3000/api/productos/1",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "productos",
+                  "1"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Pedidos",
+        "item": [
+          {
+            "name": "Obtener todos los pedidos",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/pedidos",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "pedidos"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Obtener pedido por ID",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/pedidos/1",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "pedidos",
+                  "1"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Obtener detalles de pedido",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/pedidos/1/detalles",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "pedidos",
+                  "1",
+                  "detalles"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Crear pedido",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"Codigo_Pedido\": \"PED001\",\n    \"ID_Cliente\": 1,\n    \"ID_Vendedor\": 1,\n    \"ID_Sucursal\": 1,\n    \"Canal\": \"Online\",\n    \"Estado\": \"Pendiente\",\n    \"Metodo_Entrega\": \"Despacho_Domicilio\",\n    \"Direccion_Entrega\": \"Calle Principal 123\",\n    \"Ciudad_Entrega\": \"Santiago\",\n    \"Region_Entrega\": \"Metropolitana\",\n    \"Subtotal\": 100000,\n    \"Descuento\": 5000,\n    \"Impuestos\": 19000,\n    \"Costo_Envio\": 3500,\n    \"Total\": 117500,\n    \"ID_Divisa\": 1,\n    \"detalles\": [\n        {\n            \"ID_Producto\": 1,\n            \"Cantidad\": 1,\n            \"Precio_Unitario\": 100000,\n            \"Descuento\": 5000,\n            \"Impuesto\": 19000,\n            \"Subtotal\": 114000\n        }\n    ]\n}"
+              },
+              "url": {
+                "raw": "http://localhost:3000/api/pedidos",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "pedidos"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Actualizar estado de pedido",
+            "request": {
+              "method": "PATCH",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"Estado\": \"Aprobado\",\n    \"ID_Usuario\": 1,\n    \"Comentario\": \"Pedido aprobado por administrador\"\n}"
+              },
+              "url": {
+                "raw": "http://localhost:3000/api/pedidos/1/estado",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "pedidos",
+                  "1",
+                  "estado"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Eliminar pedido",
+            "request": {
+              "method": "DELETE",
+              "url": {
+                "raw": "http://localhost:3000/api/pedidos/1",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "pedidos",
+                  "1"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Clientes",
+        "item": [
+          {
+            "name": "Obtener todos los clientes",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/clientes",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "clientes"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Obtener cliente por ID",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/clientes/1",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "clientes",
+                  "1"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Crear cliente",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"Nombre\": \"Juan Pérez\",\n    \"Email\": \"juan.perez@email.com\",\n    \"RUT\": \"12345678-9\",\n    \"Telefono\": \"+56912345678\",\n    \"Direccion\": \"Av. Providencia 123\",\n    \"Ciudad\": \"Santiago\",\n    \"Region\": \"Metropolitana\",\n    \"Tipo_Cliente\": \"Regular\",\n    \"Suscrito_Newsletter\": 1\n}"
+              },
+              "url": {
+                "raw": "http://localhost:3000/api/clientes",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "clientes"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Actualizar cliente",
+            "request": {
+              "method": "PATCH",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"Telefono\": \"+56987654321\",\n    \"Tipo_Cliente\": \"Preferente\"\n}"
+              },
+              "url": {
+                "raw": "http://localhost:3000/api/clientes/1",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "clientes",
+                  "1"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Categorías",
+        "item": [
+          {
+            "name": "Obtener todas las categorías",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/categorias",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "categorias"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Obtener productos de categoría",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/categorias/1/productos",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "categorias",
+                  "1",
+                  "productos"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Crear categoría",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"Nombre\": \"Smartphones\",\n    \"Descripcion\": \"Teléfonos inteligentes de última generación\",\n    \"Nivel\": 1,\n    \"Orden_Visualizacion\": 1\n}"
+              },
+              "url": {
+                "raw": "http://localhost:3000/api/categorias",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "categorias"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Inventario",
+        "item": [
+          {
+            "name": "Obtener todo el inventario",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/inventario",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "inventario"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Obtener inventario por sucursal",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/inventario/sucursal/1",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "inventario",
+                  "sucursal",
+                  "1"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Registrar movimiento",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n    \"Tipo_Movimiento\": \"Entrada\",\n    \"Cantidad\": 10,\n    \"ID_Bodeguero\": 1,\n    \"Comentario\": \"Recepción de productos nuevos\"\n}"
+              },
+              "url": {
+                "raw": "http://localhost:3000/api/inventario/1/movimiento",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "inventario",
+                  "1",
+                  "movimiento"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Marcas",
+        "item": [
+          {
+            "name": "Obtener todas las marcas",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/marcas",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "marcas"
+                ]
+              }
+            }
+          },
+          {
+            "name": "Obtener productos de marca",
+            "request": {
+              "method": "GET",
+              "url": {
+                "raw": "http://localhost:3000/api/marcas/1/productos",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "api",
+                  "marcas",
+                  "1",
+                  "productos"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "API Status",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:3000/api",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "3000",
+            "path": [
+              "api"
+            ]
+          }
+        }
+      }
+    ]
+  }
