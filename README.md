@@ -1,4 +1,4 @@
- API de Inventario - FerreMax
+ ##API de Inventario - FerreMax
 
 Este proyecto es una API RESTful desarrollada en Node.js con Express para gestionar las operaciones de un sistema de inventario, como productos, categorías, marcas, divisas, clientes, pedidos e inventario. Utiliza MySQL como base de datos.
 
@@ -36,7 +36,7 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
     ```
     (Reemplaza la URL si es diferente o si el nombre del directorio clonado es distinto)
 
-2.  Instala las dependencias del proyecto:**
+2.  Instala las dependencias del proyecto:
     ```bash
     npm install
     ```
