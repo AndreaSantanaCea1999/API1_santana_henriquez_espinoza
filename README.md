@@ -1,8 +1,8 @@
-# API de Inventario - FerreMax
+ API de Inventario - FerreMax
 
-Este proyecto es una API RESTful desarrollada en Node.js con Express para gestionar las operaciones de un sistema de ventas, como productos, categorías, marcas, divisas, clientes, pedidos e inventario. Utiliza MySQL como base de datos.
+Este proyecto es una API RESTful desarrollada en Node.js con Express para gestionar las operaciones de un sistema de inventario, como productos, categorías, marcas, divisas, clientes, pedidos e inventario. Utiliza MySQL como base de datos.
 
-## Características Principales
+ Características Principales
 
 *   Gestión completa (CRUD) para:
     *   Productos
@@ -17,7 +17,7 @@ Este proyecto es una API RESTful desarrollada en Node.js con Express para gestio
 *   Manejo de transacciones para operaciones críticas.
 *   Verificación de dependencias antes de eliminar registros sensibles.
 
-## Prerrequisitos
+ Prerrequisitos
 
 Antes de comenzar, asegúrate de tener instalado lo siguiente:
 
@@ -27,23 +27,23 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
 *   [Git](https://git-scm.com/) (para clonar el repositorio)
 *   Un cliente de API como [Postman](https://www.postman.com/downloads/) (para probar los endpoints)
 
-## Instalación
+ Instalación
 
-1.  **Clona el repositorio:**
+1.  Clona el repositorio:
     ```bash
     git clone https://github.com/AndreaSantanaCea1999/API1_Rodriguez_Santana_Espinoza.git
     cd API1_Rodriguez_Santana_Espinoza
     ```
     (Reemplaza la URL si es diferente o si el nombre del directorio clonado es distinto)
 
-2.  **Instala las dependencias del proyecto:**
+2.  Instala las dependencias del proyecto:**
     ```bash
     npm install
     ```
 
-## Configuración
+ Configuración
 
-1.  **Configura la Base de Datos:**
+1.  Configura la Base de Datos:
     *   Asegúrate de que tu servidor MySQL esté corriendo.
     *   Crea una base de datos. Por defecto, la aplicación espera una base de datos llamada `ferremax`. Puedes usar el script SQL proporcionado en el proyecto (`tu_script_sql.sql` - *por favor, actualiza este nombre si tienes un script de creación de BD*) para crear las tablas y la estructura necesaria.
         ```bash
@@ -51,7 +51,7 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
         # mysql -u tu_usuario -p ferremax < ruta/a/tu_script_sql.sql
         ```
 
-2.  **Crea el archivo de entorno `.env`:**
+3.  Crea el archivo de entorno `.env`:
     En la raíz del proyecto (`C:\Users\andre\APIS-VENTA\` o donde lo hayas clonado), crea un archivo llamado `.env`. Este archivo contendrá las variables de entorno necesarias para la aplicación.
 
     Copia el siguiente contenido en tu archivo `.env` y ajusta los valores según tu configuración local:
@@ -64,9 +64,9 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
     DB_NAME=ferremax
     DB_PORT=3306
     ```
-    *   **IMPORTANTE:** Asegúrate de que `DB_USER` y `DB_PASSWORD` sean correctos para tu instancia de MySQL y que este usuario tenga los permisos necesarios sobre la base de datos `ferremax`.
+    IMPORTANTE: Asegúrate de que `DB_USER` y `DB_PASSWORD` sean correctos para tu instancia de MySQL y que este usuario tenga los permisos necesarios sobre la base de datos `ferremax`.
 
-## Ejecución
+ Ejecución
 
 Una vez instaladas las dependencias y configurado el archivo `.env`, puedes iniciar el servidor API con:
 
@@ -83,11 +83,11 @@ Conexión a MySQL establecida correctamente
 
 La API estará disponible en `http://localhost:3000`.
 
-## Uso de la API y Pruebas
+ Uso de la API y Pruebas
 
 Puedes utilizar Postman o cualquier otro cliente de API para interactuar con los endpoints.
 
-**Endpoints Principales Disponibles (base `/api`):**
+Endpoints Principales Disponibles (base `/api`):
 
 *   `/productos`
 *   `/categorias`
@@ -101,6 +101,6 @@ Cada uno de estos endpoints soporta operaciones `GET`, `POST`, `PATCH`, y `DELET
 
 Se recomienda crear primero las entidades base (Divisas, Categorías, Marcas) antes de crear entidades que dependan de ellas (como Productos).
 
-## Contribuciones
+ Contribuciones
 
 Si deseas contribuir, por favor sigue los lineamientos estándar de Gitflow o realiza un fork y envía un Pull Request.
