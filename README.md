@@ -31,8 +31,8 @@ Antes de comenzar, asegúrate de tener instalado lo siguiente:
 
 1.  Clona el repositorio:
     ```bash
-    git clone https://github.com/AndreaSantanaCea1999/API1_Rodriguez_Santana_Espinoza.git
-    cd API1_Rodriguez_Santana_Espinoza
+    git clone https://github.com/AndreaSantanaCea1999/API1_santana_henriquez_espinoza.git
+    cd API1_santana_henriquez_espinoza
     ```
     (Reemplaza la URL si es diferente o si el nombre del directorio clonado es distinto)
 
