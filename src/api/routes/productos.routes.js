@@ -92,7 +92,14 @@ router.post('/', async (req, res) => {
       id: result.insertId
     });
   } catch (error) {
-    console.error('Error al crear producto:', error);
+    console.error('-----------------------------------------');
+    console.error('DETALLE DEL ERROR AL CREAR PRODUCTO:');
+    console.error('Error Code:', error.code);
+    console.error('Error No:', error.errno);
+    console.error('SQL Message:', error.sqlMessage);
+    console.error('SQL State:', error.sqlState);
+    console.error('Full Error Object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    console.error('-----------------------------------------');
     // Manejar error de entrada duplicada para el código de producto si tienes una constraint UNIQUE
     if (error.code === 'ER_DUP_ENTRY' && error.sqlMessage.includes('productos.Codigo')) { // Ajusta 'productos.Codigo' si tu constraint tiene otro nombre
       return res.status(409).json({ error: `El código de producto '${Codigo}' ya existe.` });
