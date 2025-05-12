@@ -78,12 +78,27 @@ router.post('/', async (req, res) => {
     Nivel, Icono_URL, Orden_Visualizacion
   } = req.body;
 
+  if (!Nombre) {
+    return res.status(400).json({ error: 'El campo Nombre es obligatorio.' });
+  }
+  if (Nivel === undefined || typeof Nivel !== 'number' || Nivel < 0 || !Number.isInteger(Nivel)) {
+    return res.status(400).json({ error: 'El campo Nivel es obligatorio y debe ser un entero no negativo.' });
+  }
+
   try {
+    // Verificar si ID_Categoria_Padre existe, si se proporciona
+    if (ID_Categoria_Padre !== null && ID_Categoria_Padre !== undefined) {
+      const [parentExists] = await pool.query('SELECT ID_Categoria FROM CATEGORIAS WHERE ID_Categoria = ?', [ID_Categoria_Padre]);
+      if (parentExists.length === 0) {
+        return res.status(400).json({ error: `La categoría padre con ID ${ID_Categoria_Padre} no existe.` });
+      }
+    }
+
     const [result] = await pool.query(
       `INSERT INTO CATEGORIAS 
        (Nombre, Descripcion, ID_Categoria_Padre, Nivel, Icono_URL, Orden_Visualizacion)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [Nombre, Descripcion, ID_Categoria_Padre, Nivel, Icono_URL, Orden_Visualizacion]
+      [Nombre, Descripcion, ID_Categoria_Padre || null, Nivel, Icono_URL, Orden_Visualizacion]
     );
 
     res.status(201).json({
@@ -105,15 +120,33 @@ router.patch('/:id', async (req, res) => {
     return res.status(400).json({ error: 'No se proporcionaron campos para actualizar' });
   }
 
+  // Validaciones antes de la consulta
+  if (updatedFields.Nivel !== undefined) {
+    if (typeof updatedFields.Nivel !== 'number' || updatedFields.Nivel < 0 || !Number.isInteger(updatedFields.Nivel)) {
+      return res.status(400).json({ error: 'El campo Nivel debe ser un entero no negativo.' });
+    }
+  }
+
+  if (updatedFields.ID_Categoria_Padre !== undefined && updatedFields.ID_Categoria_Padre !== null) {
+    if (updatedFields.ID_Categoria_Padre === parseInt(id, 10)) {
+      return res.status(400).json({ error: 'Una categoría no puede ser su propia categoría padre.' });
+    }
+  }
+
   try {
+    // Si se actualiza ID_Categoria_Padre, verificar que el nuevo padre exista (si no es null)
+    if (updatedFields.ID_Categoria_Padre !== undefined && updatedFields.ID_Categoria_Padre !== null) {
+      const [parentExists] = await pool.query('SELECT ID_Categoria FROM CATEGORIAS WHERE ID_Categoria = ?', [updatedFields.ID_Categoria_Padre]);
+      if (parentExists.length === 0) {
+        return res.status(400).json({ error: `La categoría padre con ID ${updatedFields.ID_Categoria_Padre} no existe.` });
+      }
+    }
+
     const setClause = Object.keys(updatedFields)
       .map(key => `${key} = ?`)
       .join(', ');
-    
     const values = [...Object.values(updatedFields), id];
-
     const query = `UPDATE CATEGORIAS SET ${setClause} WHERE ID_Categoria = ?`;
-    
     const [result] = await pool.query(query, values);
 
     if (result.affectedRows === 0) {
