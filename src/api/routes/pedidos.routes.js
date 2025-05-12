@@ -63,11 +63,50 @@ router.post('/', async (req, res) => {
     Fecha_Estimada_Entrega, Prioridad, detalles
   } = req.body;
 
+  // Validaciones básicas
+  if (!Codigo_Pedido || !ID_Cliente || !ID_Sucursal || !Total || !ID_Divisa || !Canal || !Estado || !Metodo_Entrega) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios para el pedido.' });
+  }
+  if (!detalles || !Array.isArray(detalles) || detalles.length === 0) {
+    return res.status(400).json({ error: 'El pedido debe contener al menos un detalle.' });
+  }
+
   // Iniciar transacción
   let connection;
   try {
     connection = await pool.getConnection();
     await connection.beginTransaction();
+
+    // Validar existencia de IDs foráneos
+    const [clienteExists] = await connection.query('SELECT ID_Cliente FROM CLIENTE WHERE ID_Cliente = ?', [ID_Cliente]);
+    if (clienteExists.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ error: `El cliente con ID ${ID_Cliente} no existe.` });
+    }
+    if (ID_Vendedor) {
+      const [vendedorExists] = await connection.query('SELECT ID_Vendedor FROM VENDEDOR WHERE ID_Vendedor = ?', [ID_Vendedor]);
+      if (vendedorExists.length === 0) {
+        await connection.rollback();
+        return res.status(400).json({ error: `El vendedor con ID ${ID_Vendedor} no existe.` });
+      }
+    }
+    const [sucursalExists] = await connection.query('SELECT ID_Sucursal FROM SUCURSALES WHERE ID_Sucursal = ?', [ID_Sucursal]);
+    if (sucursalExists.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ error: `La sucursal con ID ${ID_Sucursal} no existe.` });
+    }
+    const [divisaExists] = await connection.query('SELECT ID_Divisa FROM DIVISAS WHERE ID_Divisa = ?', [ID_Divisa]);
+    if (divisaExists.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ error: `La divisa con ID ${ID_Divisa} no existe.` });
+    }
+
+    // Validar estado del pedido
+    const estadosPedidoValidos = ['Pendiente', 'Aprobado', 'En_Preparacion', 'Listo_Para_Entrega', 'En_Ruta', 'Entregado', 'Cancelado', 'Devuelto'];
+    if (!estadosPedidoValidos.includes(Estado)) {
+        await connection.rollback();
+        return res.status(400).json({ error: `Estado de pedido '${Estado}' no válido.` });
+    }
 
     // Insertar el pedido
     const [resultPedido] = await connection.query(
@@ -90,6 +129,15 @@ router.post('/', async (req, res) => {
     // Si hay detalles, insertarlos
     if (detalles && Array.isArray(detalles) && detalles.length > 0) {
       for (const detalle of detalles) {
+        if (!detalle.ID_Producto || !detalle.Cantidad || detalle.Precio_Unitario === undefined || detalle.Subtotal === undefined) {
+            await connection.rollback();
+            return res.status(400).json({ error: 'Cada detalle debe tener ID_Producto, Cantidad, Precio_Unitario y Subtotal.' });
+        }
+        const [productoExists] = await connection.query('SELECT ID_Producto FROM PRODUCTOS WHERE ID_Producto = ?', [detalle.ID_Producto]);
+        if (productoExists.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({ error: `El producto con ID ${detalle.ID_Producto} en los detalles no existe.` });
+        }
         await connection.query(
           `INSERT INTO DETALLES_PEDIDO 
            (ID_Pedido, ID_Producto, Cantidad, Precio_Unitario, 
@@ -103,11 +151,29 @@ router.post('/', async (req, res) => {
     }
     
     // Registrar el histórico de estado inicial
+    // Asumimos que ID_Cliente es el ID de la tabla CLIENTE. Necesitamos el ID_Usuario asociado.
+    // Si ID_Vendedor (de la tabla VENDEDOR) está presente, obtenemos su ID_Usuario asociado.
+    // Sino, usamos el ID_Usuario del cliente.
+    let idUsuarioParaHistorico;
+    if (ID_Vendedor) {
+      // Se asume que la validación previa de vendedorExists fue exitosa si ID_Vendedor fue provisto.
+      const [vendedorInfo] = await connection.query('SELECT ID_Usuario FROM VENDEDOR WHERE ID_Vendedor = ?', [ID_Vendedor]);
+      idUsuarioParaHistorico = vendedorInfo[0].ID_Usuario;
+    } else {
+      // Se asume que la validación previa de clienteExists fue exitosa.
+      const [clienteInfo] = await connection.query('SELECT ID_Usuario FROM CLIENTE WHERE ID_Cliente = ?', [ID_Cliente]);
+      idUsuarioParaHistorico = clienteInfo[0].ID_Usuario;
+    }
+
+    if (!idUsuarioParaHistorico) {
+        await connection.rollback();
+        return res.status(500).json({ error: 'No se pudo determinar el ID de usuario para el histórico del pedido.' });
+    }
     await connection.query(
       `INSERT INTO HISTORICO_ESTADOS_PEDIDO 
        (ID_Pedido, Estado_Anterior, Estado_Nuevo, ID_Usuario, Comentario)
        VALUES (?, NULL, ?, ?, 'Creación inicial del pedido')`,
-      [idPedido, Estado, ID_Vendedor || ID_Cliente]
+      [idPedido, Estado, idUsuarioParaHistorico]
     );
 
     await connection.commit();
@@ -132,6 +198,12 @@ router.patch('/:id/estado', async (req, res) => {
   
   if (!Estado || !ID_Usuario) {
     return res.status(400).json({ error: 'Se requiere Estado e ID_Usuario' });
+  }
+
+  const estadosPedidoValidos = ['Pendiente', 'Aprobado', 'En_Preparacion', 'Listo_Para_Entrega', 'En_Ruta', 'Entregado', 'Cancelado', 'Devuelto'];
+  if (!estadosPedidoValidos.includes(Estado)) {
+      // No necesitamos rollback aquí ya que no hemos iniciado transacción para esta validación previa.
+      return res.status(400).json({ error: `Estado de pedido '${Estado}' no válido.` });
   }
 
   let connection;

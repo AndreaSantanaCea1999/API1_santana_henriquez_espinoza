@@ -14,6 +14,7 @@ const categoriasRoutes = require('./routes/categorias.routes');
 const inventarioRoutes = require('./routes/inventario.routes');
 const marcasRoutes = require('./routes/marcas.routes');
 const divisasRoutes = require('./routes/divisas.routes');
+const proveedoresRoutes = require('./routes/proveedores.routes');
 // Crear aplicación Express
 const app = express();
 
@@ -36,6 +37,8 @@ app.use('/api/categorias', categoriasRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/marcas', marcasRoutes);
 app.use('/api/divisas', divisasRoutes);
+app.use('/api/proveedores', proveedoresRoutes);
+
 // Ruta de prueba para verificar que la API está funcionando
 app.get('/api', (req, res) => {
   res.json({ 
@@ -47,7 +50,8 @@ app.get('/api', (req, res) => {
       '/api/categorias',
       '/api/inventario',
       '/api/marcas',
-      '/api/divisas'
+      '/api/divisas',
+      '/api/proveedores'
     ],
     version: '1.0.0',
     fecha: new Date()

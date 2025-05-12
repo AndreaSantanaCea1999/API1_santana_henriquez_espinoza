@@ -86,21 +86,47 @@ router.post('/', async (req, res) => {
     Stock_Maximo, Stock_Reservado, Punto_Reorden, Ubicacion_Almacen, ID_Bodeguero
   } = req.body;
 
+  if (!ID_Producto || !ID_Sucursal) {
+    return res.status(400).json({ error: 'ID_Producto e ID_Sucursal son obligatorios.' });
+  }
+
   // Verificar si ya existe un registro para este producto y sucursal
+  let connection;
   try {
-    const [existingRows] = await pool.query(
+    // Validaciones previas antes de iniciar la transacción
+    const [productoExists] = await pool.query('SELECT ID_Producto FROM PRODUCTOS WHERE ID_Producto = ?', [ID_Producto]);
+    if (productoExists.length === 0) {
+      return res.status(400).json({ error: `El producto con ID ${ID_Producto} no existe.` });
+    }
+    const [sucursalExists] = await pool.query('SELECT ID_Sucursal FROM SUCURSALES WHERE ID_Sucursal = ?', [ID_Sucursal]);
+    if (sucursalExists.length === 0) {
+      return res.status(400).json({ error: `La sucursal con ID ${ID_Sucursal} no existe.` });
+    }
+    if (ID_Bodeguero) {
+        const [bodegueroExists] = await pool.query('SELECT ID_Bodeguero FROM BODEGUERO WHERE ID_Bodeguero = ?', [ID_Bodeguero]);
+        if (bodegueroExists.length === 0) { 
+          return res.status(400).json({ error: `El bodeguero con ID ${ID_Bodeguero} no existe.` }); 
+        }
+    }
+
+    const [existingRows] = await pool.query( // Esta verificación puede estar fuera de la transacción
       'SELECT ID_Inventario FROM INVENTARIO WHERE ID_Producto = ? AND ID_Sucursal = ?',
       [ID_Producto, ID_Sucursal]
     );
     
     if (existingRows.length > 0) {
       return res.status(409).json({ 
+        // No es necesario rollback aquí si la transacción no ha comenzado o si es una verificación previa.
+        // Corregido: La transacción no ha comenzado aún para esta verificación.
         error: 'Ya existe un registro de inventario para este producto en esta sucursal',
         existing_id: existingRows[0].ID_Inventario
       });
     }
+
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
     
-    const [result] = await pool.query(
+    const [result] = await connection.query( // Usar connection
       `INSERT INTO INVENTARIO 
        (ID_Producto, ID_Sucursal, Stock_Actual, Stock_Minimo, Stock_Maximo, 
         Stock_Reservado, Punto_Reorden, Ubicacion_Almacen, ID_Bodeguero)
@@ -111,7 +137,7 @@ router.post('/', async (req, res) => {
 
     // Registrar el movimiento de inventario inicial
     if (Stock_Actual > 0) {
-      await pool.query(
+      await connection.query( // Usar connection
         `INSERT INTO MOVIMIENTOS_INVENTARIO 
          (ID_Inventario, Tipo_Movimiento, Cantidad, ID_Bodeguero, Comentario)
          VALUES (?, 'Entrada', ?, ?, 'Registro inicial de inventario')`,
@@ -119,13 +145,17 @@ router.post('/', async (req, res) => {
       );
     }
 
+    await connection.commit();
     res.status(201).json({
       message: 'Inventario creado exitosamente',
       id: result.insertId
     });
   } catch (error) {
+    if (connection) await connection.rollback();
     console.error('Error al crear inventario:', error);
     res.status(500).json({ error: 'Error al crear inventario' });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
@@ -184,6 +214,24 @@ router.post('/:id/movimiento', async (req, res) => {
     connection = await pool.getConnection();
     await connection.beginTransaction();
     
+    // Validaciones de existencia de Bodeguero y Sucursal Destino (si aplican)
+    if (ID_Bodeguero) {
+      const [bodegueroExists] = await connection.query('SELECT ID_Bodeguero FROM BODEGUERO WHERE ID_Bodeguero = ?', [ID_Bodeguero]);
+      if (bodegueroExists.length === 0) {
+          await connection.rollback(); // Rollback antes de retornar
+          connection.release();
+          return res.status(400).json({ error: `El bodeguero con ID ${ID_Bodeguero} no existe.` });
+      }
+    }
+    if (Tipo_Movimiento === 'Transferencia' && ID_Sucursal_Destino) {
+      const [sucursalDestinoExists] = await connection.query('SELECT ID_Sucursal FROM SUCURSALES WHERE ID_Sucursal = ?', [ID_Sucursal_Destino]);
+      if (sucursalDestinoExists.length === 0) { 
+        await connection.rollback(); // Rollback antes de retornar
+        connection.release();
+        return res.status(400).json({ error: `La sucursal destino con ID ${ID_Sucursal_Destino} no existe.` }); 
+      }
+    }
+
     // Verificar que el inventario exista
     const [inventarioRows] = await connection.query(
       'SELECT * FROM INVENTARIO WHERE ID_Inventario = ?',

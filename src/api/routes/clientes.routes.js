@@ -62,6 +62,10 @@ router.post('/', async (req, res) => {
     Tipo_Cliente, Suscrito_Newsletter, Limite_Credito
   } = req.body;
 
+  if (!Nombre || !Email) {
+    return res.status(400).json({ error: 'Nombre y Email son obligatorios para crear el usuario asociado al cliente.' });
+  }
+
   let connection;
   try {
     connection = await pool.getConnection();
@@ -92,6 +96,13 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     if (connection) await connection.rollback();
+    if (error.code === 'ER_DUP_ENTRY') {
+        if (error.sqlMessage.toLowerCase().includes('email')) {
+            return res.status(409).json({ error: `El email '${Email}' ya está registrado.` });
+        } else if (error.sqlMessage.toLowerCase().includes('rut')) {
+            return res.status(409).json({ error: `El RUT '${RUT}' ya está registrado.` });
+        }
+    }
     console.error('Error al crear cliente:', error);
     res.status(500).json({ error: 'Error al crear cliente' });
   } finally {
@@ -205,6 +216,13 @@ router.patch('/:id', async (req, res) => {
     });
   } catch (error) {
     if (connection) await connection.rollback();
+    if (error.code === 'ER_DUP_ENTRY') {
+        if (Email && error.sqlMessage.toLowerCase().includes('email')) {
+            return res.status(409).json({ error: `El email '${Email}' ya está registrado.` });
+        } else if (RUT && error.sqlMessage.toLowerCase().includes('rut')) {
+            return res.status(409).json({ error: `El RUT '${RUT}' ya está registrado.` });
+        }
+    }
     console.error('Error al actualizar cliente:', error);
     res.status(500).json({ error: 'Error al actualizar cliente' });
   } finally {

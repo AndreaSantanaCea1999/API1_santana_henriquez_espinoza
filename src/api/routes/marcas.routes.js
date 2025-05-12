@@ -51,6 +51,10 @@ router.post('/', async (req, res) => {
     Nombre, Descripcion, Logo_URL, Pais_Origen, Sitio_Web
   } = req.body;
 
+  if (!Nombre) {
+    return res.status(400).json({ error: 'El campo Nombre es obligatorio.' });
+  }
+
   try {
     const [result] = await pool.query(
       `INSERT INTO MARCAS 
@@ -76,6 +80,11 @@ router.patch('/:id', async (req, res) => {
 
   if (Object.keys(updatedFields).length === 0) {
     return res.status(400).json({ error: 'No se proporcionaron campos para actualizar' });
+  }
+
+  // Validar que si se envía Nombre, no esté vacío
+  if (updatedFields.Nombre !== undefined && !updatedFields.Nombre) {
+    return res.status(400).json({ error: 'El campo Nombre no puede estar vacío si se intenta actualizar.' });
   }
 
   try {

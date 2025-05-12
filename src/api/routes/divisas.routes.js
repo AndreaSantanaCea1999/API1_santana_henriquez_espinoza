@@ -51,8 +51,8 @@ router.post('/', async (req, res) => {
     });
   } catch (error)
  {
-    // Manejar error de entrada duplicada para el código de divisa
-    if (error.code === 'ER_DUP_ENTRY') {
+    // Manejar error de entrada duplicada para el código de divisa (asumiendo constraint UNIQUE en Codigo)
+    if (error.code === 'ER_DUP_ENTRY' && error.sqlMessage.toLowerCase().includes('codigo')) {
       return res.status(409).json({ error: `El código de divisa '${Codigo}' ya existe.` });
     }
     console.error('Error al crear divisa:', error);
@@ -90,7 +90,7 @@ router.patch('/:id', async (req, res) => {
     });
   } catch (error) {
     // Manejar error de entrada duplicada para el código de divisa al actualizar
-    if (error.code === 'ER_DUP_ENTRY' && updatedFields.Codigo) {
+    if (error.code === 'ER_DUP_ENTRY' && updatedFields.Codigo && error.sqlMessage.toLowerCase().includes('codigo')) {
       return res.status(409).json({ error: `El código de divisa '${updatedFields.Codigo}' ya existe.` });
     }
     console.error('Error al actualizar divisa:', error);
