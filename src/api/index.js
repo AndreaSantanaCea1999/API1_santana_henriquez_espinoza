@@ -1,20 +1,20 @@
 const express = require('express');
 const cors = require('cors');
 const { testConnection } = require('../config/db');
-
+const router = express.Router(); 
 
 
 // o algo similar
 
 // Importar rutas
-const productosRoutes = require('./routes/productos.routes');
-const pedidosRoutes = require('./routes/pedidos.routes');
-const clientesRoutes = require('./routes/clientes.routes');
-const categoriasRoutes = require('./routes/categorias.routes');
-const inventarioRoutes = require('./routes/inventario.routes');
-const marcasRoutes = require('./routes/marcas.routes');
-const divisasRoutes = require('./routes/divisas.routes');
-const proveedoresRoutes = require('./routes/proveedores.routes');
+const productosRoutes = require('../routes/productos.routes');
+const pedidosRoutes = require('../routes/pedidos.routes');
+const clientesRoutes = require('../routes/clientes.routes');
+const categoriasRoutes = require('../routes/categorias.routes');
+const inventarioRoutes = require('../routes/inventario.routes');
+const marcasRoutes = require('../routes/marcas.routes');
+const divisasRoutes = require('../routes/divisas.routes');
+const proveedoresRoutes = require('../routes/proveedores.routes');
 // Crear aplicación Express
 const app = express();
 
@@ -66,5 +66,6 @@ app.listen(PORT, async () => {
   // Comprobar la conexión a la base de datos
   await testConnection();
 });
+
 
 module.exports = app;

@@ -9,14 +9,14 @@ app.use(express.json()); // Para parsear application/json
 app.use(express.urlencoded({ extended: true })); // Para parsear application/x-www-form-urlencoded
 
 // Importar Rutas (Asegúrate de que las rutas a los archivos sean correctas)
-const categoriasRoutes = require('./api/routes/categorias.routes');
-const clientesRoutes = require('./api/routes/clientes.routes');
-const divisasRoutes = require('./api/routes/divisas.routes');
-const inventarioRoutes = require('./api/routes/inventario.routes');
-const marcasRoutes = require('./api/routes/marcas.routes');
-const pedidosRoutes = require('./api/routes/pedidos.routes');
-const productosRoutes = require('./api/routes/productos.routes');
-const proveedoresRoutes = require('./api/routes/proveedores.routes');
+const categoriasRoutes = require('./routes/categorias.routes');
+const clientesRoutes = require('./routes/clientes.routes');
+const divisasRoutes = require('./routes/divisas.routes');
+const inventarioRoutes = require('./routes/inventario.routes');
+const marcasRoutes = require('./routes/marcas.routes');
+const pedidosRoutes = require('./routes/pedidos.routes');
+const productosRoutes = require('./routes/productos.routes');
+const proveedoresRoutes = require('./routes/proveedores.routes');
 // Agrega aquí las importaciones de otras rutas que tengas (ej. usuarios, vendedores, sucursales, etc.)
 
 // Usar Rutas

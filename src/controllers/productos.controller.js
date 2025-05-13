@@ -1,165 +1,60 @@
-const ProductoModel = require('../models/producto.model');
-const { pool } = require('../../config/db'); // For transactions
+// C:\Users\andre\Desktop\API1_santana_henriquez_espinoza\src\api\controllers\productos.controller.js
 
-const ProductosController = {
-  getAllProductos: async (req, res) => {
+// Si esta API de Inventario tiene su propio modelo de producto, impórtalo aquí
+// const ProductoInventarioModel = require('../models/producto.inventario.model');
+
+// Obtener todos los productos (del inventario)
+exports.listarProductos = async (req, res, next) => {
     try {
-      const productos = await ProductoModel.findAll();
-      res.json(productos);
+        // Lógica para obtener todos los productos de la base de datos de esta API de Inventario
+        // Ejemplo: const productos = await ProductoInventarioModel.obtenerTodos(req.query);
+        const productos = [
+            { id: 1, codigo_externo: "BOS-TAL-001", nombre_producto: "Taladro Percutor Bosch GSB 13 RE", precio: 69990.00, stock_disponible_total: 50, descripcion: "Taladro percutor compacto y potente." },
+            { id: 2, codigo_externo: "MAK-SIE-005", nombre_producto: "Sierra Circular Makita HS7600", precio: 110990.00, stock_disponible_total: 25, descripcion: "Sierra circular de 7-1/4 pulgadas." },
+            { id: 3, codigo_externo: "STA-MAR-010", nombre_producto: "Martillo Carpintero Stanley 16oz", precio: 12990.00, stock_disponible_total: 100, descripcion: "Martillo con cabeza de acero y mango de fibra." },
+            { id: 4, codigo_externo: "SIK-PIN-002", nombre_producto: "Pintura Látex SikaColor-E Blanco", precio: 22500.00, stock_disponible_total: 40, descripcion: "Látex para interiores y exteriores, galón." }
+        ]; // Datos de ejemplo
+        console.log(`[API Inventario - ProductosController] Listando productos. Encontrados: ${productos.length}`);
+        res.json(productos);
     } catch (error) {
-      console.error('Error al obtener productos:', error);
-      res.status(500).json({ error: 'Error al obtener productos' });
+        console.error('[API Inventario - ProductosController] Error al listar productos:', error);
+        next(error); // Pasa el error al manejador de errores global de esta API
     }
-  },
-
-  getProductoById: async (req, res) => {
-    const { id } = req.params;
-    try {
-      const producto = await ProductoModel.findById(id);
-      if (!producto) {
-        return res.status(404).json({ error: 'Producto no encontrado' });
-      }
-      res.json(producto);
-    } catch (error) {
-      console.error('Error al obtener producto por ID:', error);
-      res.status(500).json({ error: 'Error al obtener producto' });
-    }
-  },
-
-  getProductoByCodigo: async (req, res) => {
-    const { codigo } = req.params;
-    try {
-      const producto = await ProductoModel.findByCodigo(codigo);
-      if (!producto) {
-        return res.status(404).json({ error: 'Producto no encontrado con ese código' });
-      }
-      res.json(producto);
-    } catch (error) {
-      console.error('Error al obtener producto por código:', error);
-      res.status(500).json({ error: 'Error al obtener producto por código' });
-    }
-  },
-
-  createProducto: async (req, res) => {
-    const productoData = req.body;
-    const {
-      Codigo, Nombre, ID_Categoria, ID_Marca, ID_Divisa, Precio_Venta, Estado, ID_Proveedor
-    } = productoData;
-
-    // Validaciones básicas
-    if (!Codigo || !Nombre || !ID_Categoria || !ID_Marca || !ID_Divisa || Precio_Venta === undefined) {
-      return res.status(400).json({ error: 'Faltan campos obligatorios: Codigo, Nombre, ID_Categoria, ID_Marca, ID_Divisa, Precio_Venta son requeridos.' });
-    }
-
-    const estadosValidos = ['Activo', 'Inactivo', 'Descontinuado'];
-    if (Estado && !estadosValidos.includes(Estado)) {
-      return res.status(400).json({ error: `El estado '${Estado}' no es válido. Valores permitidos: ${estadosValidos.join(', ')}.` });
-    }
-
-    try {
-      // Verificar existencia de IDs foráneos
-      if (!await ProductoModel.checkCategoriaExists(ID_Categoria)) {
-        return res.status(400).json({ error: `La categoría con ID ${ID_Categoria} no existe.` });
-      }
-      if (!await ProductoModel.checkMarcaExists(ID_Marca)) {
-        return res.status(400).json({ error: `La marca con ID ${ID_Marca} no existe.` });
-      }
-      if (ID_Proveedor && !await ProductoModel.checkProveedorExists(ID_Proveedor)) {
-        return res.status(400).json({ error: `El proveedor con ID ${ID_Proveedor} no existe.` });
-      }
-      if (!await ProductoModel.checkDivisaExists(ID_Divisa)) {
-        return res.status(400).json({ error: `La divisa con ID ${ID_Divisa} no existe.` });
-      }
-
-      const result = await ProductoModel.create(productoData);
-      res.status(201).json({
-        message: 'Producto creado exitosamente',
-        id: result.insertId
-      });
-    } catch (error) {
-      console.error('-----------------------------------------');
-      console.error('DETALLE DEL ERROR AL CREAR PRODUCTO:');
-      console.error('Error Code:', error.code);
-      console.error('Error No:', error.errno);
-      console.error('SQL Message:', error.sqlMessage);
-      console.error('SQL State:', error.sqlState);
-      console.error('Full Error Object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-      console.error('-----------------------------------------');
-      if (error.code === 'ER_DUP_ENTRY' && error.sqlMessage.includes('productos.Codigo')) {
-        return res.status(409).json({ error: `El código de producto '${Codigo}' ya existe.` });
-      }
-      res.status(500).json({ error: 'Error al crear producto' });
-    }
-  },
-
-  updateProducto: async (req, res) => {
-    const { id } = req.params;
-    const updatedFields = req.body;
-
-    if (Object.keys(updatedFields).length === 0) {
-      return res.status(400).json({ error: 'No se proporcionaron campos para actualizar' });
-    }
-
-    const estadosValidos = ['Activo', 'Inactivo', 'Descontinuado'];
-    if (updatedFields.Estado && !estadosValidos.includes(updatedFields.Estado)) {
-      return res.status(400).json({ error: `El estado '${updatedFields.Estado}' no es válido. Valores permitidos: ${estadosValidos.join(', ')}.` });
-    }
-    // Add other foreign key checks if those fields are updatable and need validation
-
-    try {
-      const result = await ProductoModel.update(id, updatedFields);
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: 'Producto no encontrado' });
-      }
-      res.json({
-        message: 'Producto actualizado exitosamente',
-        affectedRows: result.affectedRows
-      });
-    } catch (error) {
-      console.error('Error al actualizar producto:', error);
-      // Handle potential ER_DUP_ENTRY if unique fields are updated
-      res.status(500).json({ error: 'Error al actualizar producto' });
-    }
-  },
-
-  deleteProducto: async (req, res) => {
-    const { id } = req.params;
-    let connection;
-    try {
-      connection = await pool.getConnection();
-      await connection.beginTransaction();
-
-      // Verificar dependencias
-      if (await ProductoModel.isReferencedInDetallesPedido(id, connection)) {
-        await connection.rollback();
-        return res.status(400).json({ error: 'No se puede eliminar el producto porque está asociado a pedidos.' });
-      }
-      if (await ProductoModel.isReferencedInInventario(id, connection)) {
-        await connection.rollback();
-        return res.status(400).json({ error: 'No se puede eliminar el producto porque tiene registros de inventario.' });
-      }
-      // Aquí podrías añadir más verificaciones (ej. PRODUCTOS_PROMOCION, HISTORIAL_PRECIOS)
-
-      const result = await ProductoModel.remove(id, connection);
-
-      if (result.affectedRows === 0) {
-        await connection.rollback();
-        return res.status(404).json({ error: 'Producto no encontrado' });
-      }
-
-      await connection.commit();
-      res.json({
-        message: 'Producto eliminado exitosamente',
-        affectedRows: result.affectedRows
-      });
-    } catch (error) {
-      if (connection) await connection.rollback();
-      console.error('Error al eliminar producto:', error);
-      res.status(500).json({ error: 'Error al eliminar producto' });
-    } finally {
-      if (connection) connection.release();
-    }
-  }
 };
 
-module.exports = ProductosController;
+// Obtener un producto por su ID (numérico, asumiendo que la API de Inventario usa ID numérico internamente)
+exports.obtenerProductoPorId = async (req, res, next) => {
+    try {
+        const productoId = parseInt(req.params.id, 10);
+        if (isNaN(productoId)) {
+            return res.status(400).json({ error: 'El ID del producto debe ser un número.' });
+        }
+
+        // Lógica para obtener el producto de la base de datos de esta API de Inventario
+        // Ejemplo: const producto = await ProductoInventarioModel.obtenerPorId(productoId);
+        // Datos de ejemplo para simular:
+        let producto = null;
+        if (productoId === 1) {
+            producto = { id: 1, codigo_externo: "BOS-TAL-001", nombre_producto: "Taladro Percutor Bosch GSB 13 RE", Precio_Venta: 69990.00, Nombre: "Taladro Percutor Bosch GSB 13 RE", stock_disponible_total: 50, descripcion: "Taladro percutor compacto y potente." };
+        } else if (productoId === 2) {
+            producto = { id: 2, codigo_externo: "MAK-SIE-005", nombre_producto: "Sierra Circular Makita HS7600", Precio_Venta: 110990.00, Nombre: "Sierra Circular Makita HS7600", stock_disponible_total: 25, descripcion: "Sierra circular de 7-1/4 pulgadas." };
+        }
+        // Añade más casos si es necesario para tus pruebas
+
+        console.log(`[API Inventario - ProductosController] Buscando producto con ID: ${productoId}`);
+
+        if (producto) {
+            console.log(`[API Inventario - ProductosController] Producto encontrado:`, producto);
+            res.json(producto);
+        } else {
+            console.log(`[API Inventario - ProductosController] Producto con ID ${productoId} no encontrado.`);
+            res.status(404).json({ error: 'Producto no encontrado' });
+        }
+    } catch (error) {
+        console.error(`[API Inventario - ProductosController] Error al obtener producto por ID ${req.params.id}:`, error);
+        next(error);
+    }
+};
+
+// Aquí podrías tener más funciones como crearProducto, actualizarProducto, etc.
+// si tu API de Inventario necesita esas funcionalidades.
