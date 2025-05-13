@@ -11,6 +11,12 @@ const ProductoModel = {
     return rows.length > 0 ? rows[0] : null;
   },
 
+  findByCodigo: async (codigo) => {
+    const [rows] = await pool.query('SELECT * FROM PRODUCTOS WHERE Codigo = ?', [codigo]);
+    // Podrías añadir lógica para verificar Estado = 'Activo' si es necesario
+    return rows.length > 0 ? rows[0] : null;
+  },
+
   create: async (productoData) => {
     const {
       Codigo, Nombre, Descripcion, Especificaciones,
@@ -43,7 +49,7 @@ const ProductoModel = {
     return result;
   },
 
-  remove: async (id, connection) => { // Expects a transaction connection
+  remove: async (id, connection) => { 
     const [result] = await connection.query('DELETE FROM PRODUCTOS WHERE ID_Producto = ?', [id]);
     return result;
   },

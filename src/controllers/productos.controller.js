@@ -26,6 +26,20 @@ const ProductosController = {
     }
   },
 
+  getProductoByCodigo: async (req, res) => {
+    const { codigo } = req.params;
+    try {
+      const producto = await ProductoModel.findByCodigo(codigo);
+      if (!producto) {
+        return res.status(404).json({ error: 'Producto no encontrado con ese código' });
+      }
+      res.json(producto);
+    } catch (error) {
+      console.error('Error al obtener producto por código:', error);
+      res.status(500).json({ error: 'Error al obtener producto por código' });
+    }
+  },
+
   createProducto: async (req, res) => {
     const productoData = req.body;
     const {

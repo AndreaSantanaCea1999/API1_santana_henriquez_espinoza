@@ -28,6 +28,8 @@ router.get('/:id', async (req, res) => {
     console.error('Error al obtener producto por ID:', error);
     res.status(500).json({ error: 'Error al obtener producto' });
   }
+  // GET - Obtener un producto por Código
+router.get('/codigo/:codigo', ProductosController.getProductoByCodigo);
 });
 
 // POST - Crear nuevo producto
