@@ -151,10 +151,7 @@ router.post('/', async (req, res) => {
       }
     }
     
-    // Registrar el histórico de estado inicial
-    // Asumimos que ID_Cliente es el ID de la tabla CLIENTE. Necesitamos el ID_Usuario asociado.
-    // Si ID_Vendedor (de la tabla VENDEDOR) está presente, obtenemos su ID_Usuario asociado.
-    // Sino, usamos el ID_Usuario del cliente.
+
     let idUsuarioParaHistorico;
     if (ID_Vendedor) {
       // Se asume que la validación previa de vendedorExists fue exitosa si ID_Vendedor fue provisto.
