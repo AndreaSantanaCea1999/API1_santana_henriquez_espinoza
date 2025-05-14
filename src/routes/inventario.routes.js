@@ -1,46 +1,27 @@
 const express = require('express');
 const router = express.Router();
+const inventarioController = require('../controllers/inventario.controller');
 
-// Importar las funciones del controlador de inventario
-const {
-  getAllInventario,
-  getInventarioStockByProductoAndSucursal,
-  getInventarioById,
-  getInventarioBySucursal,
-  getInventarioByProducto,
-  createInventario,
-  updateInventarioFields,
-  createMovimientoInventario,
-  deleteInventario
-} = require('../controllers/inventario.controller');
+// Rutas de consulta
+router.get('/', inventarioController.getAllInventario);
+router.get('/:id', inventarioController.getInventarioById);
 
-// GET - Obtener todo el inventario
-router.get('/', getAllInventario);
+// Estas deben existir en tu controller:
+router.get('/producto/:idProducto/sucursal/:idSucursal', inventarioController.getByProductoAndSucursal);
+router.get('/producto/:idProducto', inventarioController.getByProducto);
 
-// GET - Obtener stock de un producto en una sucursal específica (NUEVO ENDPOINT)
-// Ejemplo de llamada: /api/inventario/stock?productoId=1&sucursalId=1
-router.get('/stock', getInventarioStockByProductoAndSucursal);
+router.get('/stock', inventarioController.getInventarioStockByProductoAndSucursal);
 
-// GET - Obtener inventario por ID
-router.get('/:id', getInventarioById);
+// Crear inventario
+router.post('/', inventarioController.createInventario);
 
-// GET - Obtener inventario de una sucursal
-router.get('/sucursal/:idSucursal', getInventarioBySucursal);
+// Actualizar inventario (sin tocar stock, producto ni sucursal)
+router.put('/:id', inventarioController.updateInventarioFields);
 
-// GET - Obtener inventario de un producto
-router.get('/producto/:idProducto', getInventarioByProducto);
+// Movimiento de stock (entrada/salida)
+router.post('/:id/movimiento', inventarioController.createMovimientoInventario);
 
-// POST - Crear nuevo registro de inventario
-router.post('/', createInventario);
-
-// PATCH - Actualizar un registro de inventario
-// Este PATCH actualiza campos generales del inventario, no el stock directamente.
-router.patch('/:id', updateInventarioFields);
-
-// POST - Registrar movimiento de inventario
-router.post('/:id/movimiento', createMovimientoInventario);
-
-// DELETE - Eliminar un registro de inventario
-router.delete('/:id', deleteInventario);
+// Eliminar inventario (y sus movimientos)
+router.delete('/:id', inventarioController.deleteInventario);
 
 module.exports = router;
