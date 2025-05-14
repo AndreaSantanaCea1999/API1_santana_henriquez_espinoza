@@ -57,14 +57,14 @@ exports.obtenerProductoPorIdOCodigo = async (req, res, next) => {
 // Crear un nuevo producto
 exports.crearProducto = async (req, res, next) => {
     const {
-        Codigo, Nombre, Descripcion, Precio_Compra_Neto, Precio_Venta_Neto,
-        Precio_Venta_Bruto, ID_Marca, ID_Categoria, ID_Proveedor, Unidad_Medida,
-        Peso_kg, Dimensiones, SKU, UPC_EAN, Estado = 'Activo', Es_Servicio = 0,
-        Control_Stock = 1, ID_Divisa
+       Codigo, Nombre, Descripcion, Especificaciones, ID_Categoria, ID_Marca,
+        ID_Proveedor, Codigo_Proveedor, ID_Divisa, Precio_Compra, Precio_Venta,
+        Descuento_Maximo, Tasa_Impuesto = 19, Peso, Dimensiones, Imagen_URL,
+        Destacado = 0, Estado = 'Activo'
     } = req.body;
 
-    if (!Codigo || !Nombre || Precio_Venta_Neto === undefined || !ID_Marca || !ID_Categoria || !ID_Divisa) {
-        return res.status(400).json({ error: 'Los campos Codigo, Nombre, Precio_Venta_Neto, ID_Marca, ID_Categoria e ID_Divisa son obligatorios.' });
+    if (!Codigo || !Nombre || !ID_Categoria || !ID_Marca || !ID_Divisa || Precio_Venta === undefined) {
+        return res.status(400).json({ error: 'Los campos Codigo, Nombre, ID_Categoria, ID_Marca, ID_Divisa y Precio_Venta son obligatorios.' });
     }
 
     let connection;
@@ -88,7 +88,7 @@ exports.crearProducto = async (req, res, next) => {
             await connection.rollback();
             return res.status(400).json({ error: `La divisa con ID ${ID_Divisa} no existe.` });
         }
-        if (ID_Proveedor) {
+            if (ID_Proveedor !== undefined && ID_Proveedor !== null) { // Solo validar si se proporciona
             const [proveedorExists] = await connection.query('SELECT ID_Proveedor FROM PROVEEDORES WHERE ID_Proveedor = ?', [ID_Proveedor]);
             if (proveedorExists.length === 0) {
                 await connection.rollback();
@@ -97,24 +97,24 @@ exports.crearProducto = async (req, res, next) => {
         }
 
         const query = `INSERT INTO PRODUCTOS (
-                Codigo, Nombre, Descripcion, Precio_Compra_Neto, Precio_Venta_Neto,
-                Precio_Venta_Bruto, ID_Marca, ID_Categoria, ID_Proveedor, Unidad_Medida,
-                Peso_kg, Dimensiones, SKU, UPC_EAN, Estado, Es_Servicio,
-                Control_Stock, ID_Divisa, Fecha_Creacion, Fecha_Actualizacion
+                Codigo, Nombre, Descripcion, Especificaciones, ID_Categoria, ID_Marca,
+                ID_Proveedor, Codigo_Proveedor, ID_Divisa, Precio_Compra, Precio_Venta,
+                Descuento_Maximo, Tasa_Impuesto, Peso, Dimensiones, Imagen_URL,
+                Destacado, Estado, Fecha_Creacion, Ultima_Actualizacion
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`;
 
         const values = [
-            Codigo, Nombre, Descripcion, Precio_Compra_Neto, Precio_Venta_Neto,
-            Precio_Venta_Bruto, ID_Marca, ID_Categoria, ID_Proveedor, Unidad_Medida,
-            Peso_kg, Dimensiones, SKU, UPC_EAN, Estado, Es_Servicio,
-            Control_Stock, ID_Divisa
+            Codigo, Nombre, Descripcion, Especificaciones, ID_Categoria, ID_Marca,
+            ID_Proveedor, Codigo_Proveedor, ID_Divisa, Precio_Compra, Precio_Venta,
+            Descuento_Maximo, Tasa_Impuesto, Peso, Dimensiones, Imagen_URL,
+            Destacado, Estado
         ];
 
         console.log(`[API Inventario - ProductosController] Creando producto. Query: ${query}`);
         const [result] = await connection.query(query, values);
         await connection.commit();
 
-        console.log(`[API Inventario - ProductosController] Producto creado con ID: ${result.insertId}`);
+        console.log(`[API Inventario - ProductosController] Creando producto. Query: ${query}`, values);
         res.status(201).json({
             message: 'Producto creado exitosamente',
             id_producto: result.insertId,
@@ -123,12 +123,12 @@ exports.crearProducto = async (req, res, next) => {
     } catch (error) {
         if (connection) await connection.rollback();
         console.error('[API Inventario - ProductosController] Error al crear producto:', error);
-        if (error.code === 'ER_DUP_ENTRY') {
+         if (error.code === 'ER_DUP_ENTRY' || (error.errorNum && error.errorNum === 1)) { // ORA-00001
             if (error.sqlMessage.toLowerCase().includes('codigo')) {
                  return res.status(409).json({ error: `El código de producto '${Codigo}' ya existe.` });
             }
-            if (error.sqlMessage.toLowerCase().includes('sku') && SKU) {
-                 return res.status(409).json({ error: `El SKU '${SKU}' ya existe.` });
+             if (error.sqlMessage.toLowerCase().includes(Codigo_Proveedor) && Codigo_Proveedor) { // Asumiendo que Codigo_Proveedor también podría ser único
+                 return res.status(409).json({ error: `El Código de Proveedor '${Codigo_Proveedor}' ya existe.` });
             }
              return res.status(409).json({ error: 'Error de duplicado al crear el producto.', detalle: error.sqlMessage });
         }
@@ -156,10 +156,10 @@ exports.actualizarProducto = async (req, res, next) => {
     // delete updatedFields.Codigo; // Descomentar si no se permite actualizar Codigo
 
     const camposPermitidos = [
-        "Nombre", "Descripcion", "Precio_Compra_Neto", "Precio_Venta_Neto",
-        "precio_venta_bruto", "ID_Marca", "ID_Categoria", "ID_Proveedor",
-        "Unidad_Medida", "Peso_kg", "Dimensiones", "SKU", "UPC_EAN",
-        "Estado", "Es_Servicio", "Control_Stock", "ID_Divisa", "Codigo" // Permitir Codigo con cuidado
+        "Nombre", "Descripcion", "Especificaciones", "ID_Categoria", "ID_Marca",
+        "ID_Proveedor", "Codigo_Proveedor", "ID_Divisa", "Precio_Compra", "Precio_Venta",
+        "Descuento_Maximo", "Tasa_Impuesto", "Peso", "Dimensiones", "Imagen_URL",
+        "Destacado", "Estado", "Codigo" // Permitir Codigo con cuidado
     ];
 
     const setClauses = [];
@@ -173,20 +173,18 @@ exports.actualizarProducto = async (req, res, next) => {
         for (const key in updatedFields) {
             if (updatedFields.hasOwnProperty(key) && camposPermitidos.includes(key)) {
                 // Validar FKs si se están actualizando
-                if (key === 'ID_Marca' && updatedFields[key] !== null) {
+               if (key === 'ID_Marca' && updatedFields[key] !== undefined && updatedFields[key] !== null) {
                     const [fkExists] = await connection.query('SELECT ID_Marca FROM MARCAS WHERE ID_Marca = ?', [updatedFields[key]]);
                     if (fkExists.length === 0) throw new Error(`La marca con ID ${updatedFields[key]} no existe.`);
                 }
-                if (key === 'ID_Categoria' && updatedFields[key] !== null) {
+                 if (key === 'ID_Categoria' && updatedFields[key] !== undefined && updatedFields[key] !== null) {
                     const [fkExists] = await connection.query('SELECT ID_Categoria FROM CATEGORIAS WHERE ID_Categoria = ?', [updatedFields[key]]);
                     if (fkExists.length === 0) throw new Error(`La categoría con ID ${updatedFields[key]} no existe.`);
                 }
-                if (key === 'ID_Divisa' && updatedFields[key] !== null) {
-                    const [fkExists] = await connection.query('SELECT ID_Divisa FROM DIVISAS WHERE ID_Divisa = ?', [updatedFields[key]]);
+                if (key === 'ID_Divisa' && updatedFields[key] !== undefined && updatedFields[key] !== null) {
                     if (fkExists.length === 0) throw new Error(`La divisa con ID ${updatedFields[key]} no existe.`);
                 }
-                if (key === 'ID_Proveedor' && updatedFields[key] !== null) {
-                    const [fkExists] = await connection.query('SELECT ID_Proveedor FROM PROVEEDORES WHERE ID_Proveedor = ?', [updatedFields[key]]);
+                if (key === 'ID_Proveedor' && updatedFields[key] !== undefined && updatedFields[key] !== null) {
                     if (fkExists.length === 0) throw new Error(`El proveedor con ID ${updatedFields[key]} no existe.`);
                 }
 
@@ -200,12 +198,12 @@ exports.actualizarProducto = async (req, res, next) => {
             return res.status(400).json({ error: 'Ninguno de los campos proporcionados es actualizable o válido.' });
         }
 
-        setClauses.push('Fecha_Actualizacion = CURRENT_TIMESTAMP');
+        setClauses.push('Ultima_Actualizacion = CURRENT_TIMESTAMP');
         values.push(productoId); // Para la cláusula WHERE
 
         const query = `UPDATE PRODUCTOS SET ${setClauses.join(', ')} WHERE ID_Producto = ?`;
 
-        console.log(`[API Inventario - ProductosController] Actualizando producto ID: ${productoId}. Query: ${query}`);
+       console.log(`[API Inventario - ProductosController] Actualizando producto ID: ${productoId}. Query: ${query}`, values);
         const [result] = await connection.query(query, values);
         
         if (result.affectedRows === 0) {
@@ -221,14 +219,13 @@ exports.actualizarProducto = async (req, res, next) => {
     } catch (error) {
         if (connection) await connection.rollback();
         console.error(`[API Inventario - ProductosController] Error al actualizar producto por ID ${productoId}:`, error);
-        if (error.code === 'ER_DUP_ENTRY') {
+        if (error.code === 'ER_DUP_ENTRY' || (error.errorNum && error.errorNum === 1)) { // ORA-00001
             // Ser más específico sobre qué campo causó el duplicado
             if (updatedFields.Codigo && error.sqlMessage.toLowerCase().includes('codigo')) {
                  return res.status(409).json({ error: `El código de producto '${updatedFields.Codigo}' ya está en uso.` });
             }
-            if (updatedFields.SKU && error.sqlMessage.toLowerCase().includes('sku')) {
-                 return res.status(409).json({ error: `El SKU '${updatedFields.SKU}' ya está en uso.` });
-            }
+        
+            
             return res.status(409).json({ error: 'Error de duplicado al actualizar el producto.', detalle: error.sqlMessage });
         }
         // Si el error es por FK no existente (lanzado manualmente)
