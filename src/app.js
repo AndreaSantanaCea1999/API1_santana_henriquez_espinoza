@@ -1,52 +1,21 @@
-require('dotenv').config(); // Carga las variables de .env al inicio
-
 const express = require('express');
+const apiRoutes = require('./api/index');
+const sequelize = require('./config/database'); // Ajuste ruta para que sea relativa a app.js
+require('dotenv').config();
+
 const app = express();
+
+app.use(express.json()); // body-parser integrado en Express moderno
+
+app.use('/api', apiRoutes);
+
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
-app.use(express.json()); // Para parsear application/json
-app.use(express.urlencoded({ extended: true })); // Para parsear application/x-www-form-urlencoded
-
-// Importar Rutas (Asegúrate de que las rutas a los archivos sean correctas)
-const categoriasRoutes = require('./routes/categorias.routes');
-const clientesRoutes = require('./routes/clientes.routes');
-const divisasRoutes = require('./routes/divisas.routes');
-const inventarioRoutes = require('./routes/inventario.routes');
-const marcasRoutes = require('./routes/marcas.routes');
-const pedidosRoutes = require('./routes/pedidos.routes');
-const productosRoutes = require('./routes/productos.routes');
-const proveedoresRoutes = require('./routes/proveedores.routes');
-// Agrega aquí las importaciones de otras rutas que tengas (ej. usuarios, vendedores, sucursales, etc.)
-
-// Usar Rutas
-app.get('/', (req, res) => { // Ruta raíz de prueba
-  res.json({ message: 'Bienvenido a la API ERP Santana-Henriquez-Espinoza' });
-});
-
-app.use('/api/categorias', categoriasRoutes);
-app.use('/api/clientes', clientesRoutes);
-app.use('/api/divisas', divisasRoutes);
-app.use('/api/inventario', inventarioRoutes);
-app.use('/api/marcas', marcasRoutes);
-app.use('/api/pedidos', pedidosRoutes);
-app.use('/api/productos', productosRoutes);
-app.use('/api/proveedores', proveedoresRoutes);
-// Agrega aquí el uso de otras rutas
-
-// Middleware para manejar rutas no encontradas (404)
-app.use((req, res, next) => {
-  res.status(404).json({ error: 'Recurso no encontrado' });
-});
-
-// Middleware de manejo de errores (debe ser el último)
-app.use((err, req, res, next) => {
-  console.error('ERROR DETECTADO:', err.stack);
-  const statusCode = err.statusCode || 500;
-  const errorMessage = err.message || 'Error interno del servidor';
-  res.status(statusCode).json({ error: errorMessage });
-});
-
-app.listen(PORT, () => {
-  console.log(`Servidor API corriendo en http://localhost:${PORT}`);
-});
+sequelize.authenticate()
+  .then(() => {
+    console.log('✅ Conexión a la base de datos exitosa');
+    app.listen(PORT, () => console.log(`🚀 Servidor corriendo en puerto ${PORT}`));
+  })
+  .catch(err => {
+    console.error('❌ Error al conectar a la base de datos:', err);
+  });
