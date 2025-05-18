@@ -1,24 +1,24 @@
 {
-  "name": "api-ventas",
+  "name": "inventario-api",
   "version": "1.0.0",
-  "description": "API de ventas para base de datos MySQL",
-  "main": "src/scripts/index.js",
+  "description": "API de gestión de inventario para FERREMAS",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node src/scripts/index.js",
-    "dev": "nodemon src/scripts/index.js",
-    "test": "echo \"Error: no test specified (consider using Newman with Postman collection)\" && exit 1"
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Tu Nombre o Nombre de Organización",
+  "author": "FERREMAS Dev Team",
   "license": "ISC",
   "dependencies": {
-    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "express": "^5.1.0",
+    "express": "^4.21.2",
+    "morgan": "^1.10.0",
     "mysql2": "^3.14.1",
     "sequelize": "^6.37.7"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.10"
   }
 }

@@ -1,51 +1,151 @@
-const Inventario = require('../models/inventario');
+const { Inventario, Productos } = require('../models');
 
-exports.getAll = async (req, res) => {
+// Obtener todo el inventario
+exports.getAllInventario = async (req, res) => {
   try {
-    const inventarios = await Inventario.findAll();
-    res.json(inventarios);
+    const inventario = await Inventario.findAll({
+      include: [{ model: Productos, as: 'producto' }]
+    });
+    
+    res.status(200).json({
+      success: true,
+      count: inventario.length,
+      data: inventario
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error al obtener inventarios', error });
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener el inventario',
+      error: error.message
+    });
   }
 };
 
-exports.getById = async (req, res) => {
+// Obtener inventario por ID
+exports.getInventarioById = async (req, res) => {
   try {
-    const inventario = await Inventario.findByPk(req.params.id);
-    if (!inventario) return res.status(404).json({ message: 'Inventario no encontrado' });
-    res.json(inventario);
+    const inventario = await Inventario.findByPk(req.params.id, {
+      include: [{ model: Productos, as: 'producto' }]
+    });
+    
+    if (!inventario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Inventario no encontrado'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      data: inventario
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error al obtener inventario', error });
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener el inventario',
+      error: error.message
+    });
   }
 };
 
-exports.create = async (req, res) => {
+// Crear un nuevo registro de inventario
+exports.createInventario = async (req, res) => {
   try {
     const nuevoInventario = await Inventario.create(req.body);
-    res.status(201).json(nuevoInventario);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Registro de inventario creado exitosamente',
+      data: nuevoInventario
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error al crear inventario', error });
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: 'Error al crear el registro de inventario',
+      error: error.message
+    });
   }
 };
 
-exports.update = async (req, res) => {
+// Actualizar un registro de inventario
+exports.updateInventario = async (req, res) => {
   try {
     const inventario = await Inventario.findByPk(req.params.id);
-    if (!inventario) return res.status(404).json({ message: 'Inventario no encontrado' });
+    
+    if (!inventario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Registro de inventario no encontrado'
+      });
+    }
+    
     await inventario.update(req.body);
-    res.json(inventario);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Registro de inventario actualizado exitosamente',
+      data: inventario
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar inventario', error });
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: 'Error al actualizar el registro de inventario',
+      error: error.message
+    });
   }
 };
 
-exports.delete = async (req, res) => {
+// Eliminar un registro de inventario
+exports.deleteInventario = async (req, res) => {
   try {
     const inventario = await Inventario.findByPk(req.params.id);
-    if (!inventario) return res.status(404).json({ message: 'Inventario no encontrado' });
+    
+    if (!inventario) {
+      return res.status(404).json({
+        success: false,
+        message: 'Registro de inventario no encontrado'
+      });
+    }
+    
     await inventario.destroy();
-    res.json({ message: 'Inventario eliminado' });
+    
+    res.status(200).json({
+      success: true,
+      message: 'Registro de inventario eliminado exitosamente'
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error al eliminar inventario', error });
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar el registro de inventario',
+      error: error.message
+    });
+  }
+};
+
+// Obtener inventario por ID de producto
+exports.getInventarioByProducto = async (req, res) => {
+  try {
+    const inventario = await Inventario.findAll({
+      where: { ID_Producto: req.params.productoId },
+      include: [{ model: Productos, as: 'producto' }]
+    });
+    
+    res.status(200).json({
+      success: true,
+      count: inventario.length,
+      data: inventario
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener el inventario del producto',
+      error: error.message
+    });
   }
 };
