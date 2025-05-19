@@ -1,106 +1,142 @@
- **API de Inventario - FerreMax**
+# FERREMAS - API de Inventario y Productos
 
-Este proyecto es una API RESTful desarrollada en Node.js con Express para gestionar las operaciones de un sistema de inventario, como productos, categorías, marcas, divisas, clientes, pedidos e inventario. Utiliza MySQL como base de datos.
+## Descripción
 
- Características Principales
+Esta API/Webservice ha sido desarrollada para "FERREMAS" con el objetivo de gestionar la información detallada de productos, incluyendo precios, modelos, marcas, códigos y stock.
 
-*   Gestión completa (CRUD) para:
-    *   Productos
-    *   Categorías (con jerarquía)
-    *   Marcas
-    *   Divisas
-    *   Clientes (incluye gestión de usuarios y roles básicos)
-    *   Pedidos (con detalles e historial de estados)
-    *   Inventario (con movimientos)
-*   Conexión a base de datos MySQL.
-*   Estructura modular de rutas y controladores.
-*   Manejo de transacciones para operaciones críticas.
-*   Verificación de dependencias antes de eliminar registros sensibles.
+La API está diseñada para dos propósitos principales:
+1.  **Consumo Interno:** Permitir que las distintas sucursales de "FERREMAS" puedan realizar pedidos y mantener un inventario apropiado para sus ventas locales.
+2.  **Consumo Externo:** Permitir que otras tiendas puedan consultar precios y detalles de productos desde sus propias aplicaciones.
 
- Prerrequisitos
+El proyecto también contempla la futura integración con el sistema de pagos "WEBPAY" para compras online y una API de conversión de divisas del Banco Central de Chile para gestionar pedidos desde el extranjero.
 
-Antes de comenzar, asegúrate de tener instalado lo siguiente:
+## Tecnologías Utilizadas
 
-*   [Node.js](https://nodejs.org/) (se recomienda la versión LTS)
-*   [npm](https://www.npmjs.com/) (generalmente viene con Node.js)
-*   [MySQL Server](https://dev.mysql.com/downloads/mysql/) (o una alternativa compatible como MariaDB)
-*   [Git](https://git-scm.com/) (para clonar el repositorio)
-*   Un cliente de API como [Postman](https://www.postman.com/downloads/) (para probar los endpoints)
+*   **Node.js:** Entorno de ejecución para JavaScript del lado del servidor.
+*   **Express.js:** Framework web para Node.js, utilizado para construir la API RESTful.
+*   **Sequelize:** ORM (Object-Relational Mapper) para Node.js, utilizado para interactuar con la base de datos.
+*   **MySQL:** Sistema de gestión de bases de datos relacional.
+*   **dotenv:** Módulo para cargar variables de entorno desde un archivo `.env`.
+*   **cors:** Middleware para habilitar CORS (Cross-Origin Resource Sharing).
 
- Instalación
+## Estructura del Proyecto
 
-1.  Clona el repositorio:
+```
+src/
+├── config/
+│   └── database.js         # Configuración de la conexión a la base de datos
+├── controllers/            # Lógica de negocio para cada ruta
+│   ├── categoriasController.js
+│   ├── inventarioController.js
+│   ├── marcasController.js
+│   ├── movimientosInventarioController.js
+│   ├── productosController.js
+│   └── proveedoresController.js
+├── models/                 # Definiciones de los modelos de Sequelize y sus relaciones
+│   ├── categorias.js
+│   ├── index.js            # Inicializa modelos y define relaciones
+│   ├── inventario.js
+│   ├── marcas.js
+│   ├── movimientosInventario.js
+│   ├── productos.js
+│   └── proveedores.js
+├── routes/                 # Definiciones de las rutas de la API
+│   ├── categoriasRoutes.js
+│   ├── index.js            # Enrutador principal
+│   ├── inventarioRoutes.js
+│   ├── marcasRoutes.js
+│   ├── movimientosInventarioRoutes.js
+│   ├── productosRoutes.js
+│   └── proveedoresRoutes.js
+└── app.js                  # Archivo principal de la aplicación Express
+.env                        # Archivo para variables de entorno (no versionado)
+.gitignore
+package.json
+README.md
+```
+
+## Configuración del Entorno
+
+1.  **Clonar el repositorio:**
     ```bash
-    git clone https://github.com/AndreaSantanaCea1999/API1_santana_henriquez_espinoza.git
-    cd API1_santana_henriquez_espinoza
+    git clone <url-del-repositorio>
+    cd <nombre-del-directorio-del-proyecto>
     ```
-    (Reemplaza la URL si es diferente o si el nombre del directorio clonado es distinto)
 
-2.  Instala las dependencias del proyecto:
+2.  **Instalar dependencias:**
     ```bash
     npm install
     ```
 
- Configuración
-
-1.  Configura la Base de Datos:
-    *   Asegúrate de que tu servidor MySQL esté corriendo.
-    *   Crea una base de datos. Por defecto, la aplicación espera una base de datos llamada `ferremax`. Puedes usar el script SQL proporcionado en el proyecto (`tu_script_sql.sql` - *por favor, actualiza este nombre si tienes un script de creación de BD*) para crear las tablas y la estructura necesaria.
-        ```bash
-        # Ejemplo de cómo ejecutar el script desde la línea de comandos de mysql
-        # mysql -u tu_usuario -p ferremax < ruta/a/tu_script_sql.sql
-        ```
-
-3.  Crea el archivo de entorno `.env`:
-    En la raíz del proyecto (`C:\Users\andre\APIS-VENTA\` o donde lo hayas clonado), crea un archivo llamado `.env`. Este archivo contendrá las variables de entorno necesarias para la aplicación.
-
-    Copia el siguiente contenido en tu archivo `.env` y ajusta los valores según tu configuración local:
+3.  **Configurar variables de entorno:**
+    Crea un archivo `.env` en la raíz del proyecto con la siguiente estructura y complétalo con tus credenciales de base de datos:
     ```env
-    PORT=3000
-
-    DB_HOST=localhost
-    DB_USER=administrador
-    DB_PASSWORD=yR!9uL2@pX
     DB_NAME=ferremax
+    DB_USER=root
+    DB_PASSWORD=tu_contraseña_de_mysql
+    DB_HOST=localhost
     DB_PORT=3306
+    PORT=3000
     ```
-    IMPORTANTE: Asegúrate de que `DB_USER` y `DB_PASSWORD` sean correctos para tu instancia de MySQL y que este usuario tenga los permisos necesarios sobre la base de datos `ferremax`.
 
- Ejecución
+4.  **Base de Datos:**
+    Asegúrate de tener una instancia de MySQL corriendo y crea una base de datos con el nombre especificado en `DB_NAME` (por defecto `ferremax`).
+    Los modelos de Sequelize se encargarán de crear las tablas si no existen, o puedes usar migraciones si las implementas.
 
-Una vez instaladas las dependencias y configurado el archivo `.env`, puedes iniciar el servidor API con:
+## Cómo Ejecutar la Aplicación
 
+Para iniciar el servidor API, ejecuta:
 ```bash
 npm start
 ```
+El servidor se ejecutará en `http://localhost:3000` (o el puerto especificado en `PORT`).
 
-Si todo está configurado correctamente, deberías ver un mensaje en la consola similar a:
+## Endpoints Principales de la API
 
-```
-Servidor API iniciado en puerto 3000
-Conexión a MySQL establecida correctamente
-```
+Todas las rutas están prefijadas con `/api`.
 
-La API estará disponible en `http://localhost:3000`.
+*   **Proveedores:** `/proveedores`
+    *   `GET /`: Obtener todos los proveedores.
+    *   `GET /:id`: Obtener un proveedor por ID.
+    *   `POST /`: Crear un nuevo proveedor (requiere `ID_Proveedor` manual).
+    *   `PUT /:id`: Actualizar un proveedor.
+    *   `DELETE /:id`: Eliminar un proveedor.
+*   **Productos:** `/productos`
+    *   `GET /`: Obtener todos los productos.
+    *   `GET /:id`: Obtener un producto por ID.
+    *   `POST /`: Crear un nuevo producto (`ID_Producto` es auto-incremental).
+    *   `PUT /:id`: Actualizar un producto.
+    *   `DELETE /:id`: Eliminar un producto.
+*   **Categorías:** `/categorias` (CRUD similar, `ID_Categoria` auto-incremental)
+*   **Marcas:** `/marcas` (CRUD similar, requiere `ID_Marca` manual)
+*   **Inventario:** `/inventario`
+    *   `GET /`: Obtener todo el inventario.
+    *   `GET /:id`: Obtener inventario por su ID.
+    *   `GET /producto/:productoId`: Obtener inventario por ID de producto.
+    *   `POST /`: Crear un registro de inventario (`ID_Inventario` auto-incremental).
+    *   `PUT /:id`: Actualizar un registro de inventario.
+    *   `DELETE /:id`: Eliminar un registro de inventario.
+    *   `DELETE /producto/:productoId`: Eliminar todos los registros de inventario y sus movimientos asociados para un producto específico.
+*   **Movimientos de Inventario:** `/movimientos`
+    *   `GET /`: Obtener todos los movimientos.
+    *   `GET /:id`: Obtener un movimiento por ID.
+    *   `POST /`: Crear un nuevo movimiento (`ID_Movimiento` auto-incremental).
+    *   `PUT /:id`: Actualizar un movimiento (generalmente solo campos no críticos como comentarios).
+    *   `DELETE /:id`: Eliminar un movimiento (revierte el impacto en el stock).
+    *   Rutas adicionales para filtrar por inventario, fecha, tipo y generar reportes.
 
- Uso de la API y Pruebas
+## Pruebas
 
-Puedes utilizar Postman o cualquier otro cliente de API para interactuar con los endpoints.
+Se recomienda utilizar Postman para probar los diferentes endpoints de la API.
 
-Endpoints Principales Disponibles (base `/api`):
+1.  Importa la colección de Postman (si se proporciona) o crea solicitudes manualmente para cada endpoint.
+2.  Asegúrate de que el servidor API esté corriendo.
+3.  Envía solicitudes a los endpoints con los datos apropiados en el cuerpo (para POST y PUT) y verifica las respuestas (códigos de estado y cuerpos JSON).
 
-*   `/productos`
-*   `/categorias`
-*   `/marcas`
-*   `/divisas`
-*   `/clientes`
-*   `/pedidos`
-*   `/inventario`
+## Contribuciones
 
-Cada uno de estos endpoints soporta operaciones `GET`, `POST`, `PATCH`, y `DELETE` para la gestión de sus respectivas entidades. Consulta el código fuente en la carpeta `src/api/routes/` para ver las rutas específicas y los parámetros esperados.
+Por favor, sigue las guías de estilo y contribución del proyecto si deseas colaborar.
 
-Se recomienda crear primero las entidades base (Divisas, Categorías, Marcas) antes de crear entidades que dependan de ellas (como Productos).
+## Licencia
 
- Contribuciones
-
-Si deseas contribuir, por favor sigue los lineamientos estándar de Gitflow o realiza un fork y envía un Pull Request.
+(Especifica tu licencia aquí, por ejemplo, MIT, Apache 2.0, etc. Si no tienes una, puedes omitirlo o poner "Propietaria")
