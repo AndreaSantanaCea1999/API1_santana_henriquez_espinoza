@@ -1,4 +1,4 @@
-const { MovimientosInventario, Inventario, Productos } = require('../models');
+const { sequelize, MovimientosInventario, Inventario, Productos } = require('../models'); // Importar sequelize
 
 // Obtener todos los movimientos
 exports.getAllMovimientos = async (req, res) => {
@@ -98,6 +98,7 @@ exports.getMovimientosByInventario = async (req, res) => {
 
 // Crear un nuevo movimiento
 exports.createMovimiento = async (req, res) => {
+  const t = await sequelize.transaction(); // Iniciar transacción
   try {
     const {
       ID_Inventario,
@@ -109,43 +110,41 @@ exports.createMovimiento = async (req, res) => {
       Comentario,
       ID_Sucursal_Destino
     } = req.body;
-    
-    // Verificar que el inventario existe
-    const inventario = await Inventario.findByPk(ID_Inventario);
+
+    const inventario = await Inventario.findByPk(ID_Inventario, { transaction: t });
     if (!inventario) {
+      await t.rollback();
       return res.status(404).json({
         success: false,
         error: 'El inventario especificado no existe'
       });
     }
-    
-    // Validar tipo de movimiento
+
     if (!['Entrada', 'Salida', 'Ajuste', 'Reserva', 'Transferencia'].includes(Tipo_Movimiento)) {
+      await t.rollback();
       return res.status(400).json({
         success: false,
         error: 'Tipo de movimiento no válido'
       });
     }
-    
-    // Para movimientos de Salida, verificar que haya stock suficiente
+
     if (Tipo_Movimiento === 'Salida' && inventario.Stock_Actual < Cantidad) {
+      await t.rollback();
       return res.status(400).json({
         success: false,
         error: 'Stock insuficiente para este movimiento'
       });
     }
-    
-    // Para transferencias, verificar que la sucursal destino exista
+
     if (Tipo_Movimiento === 'Transferencia' && !ID_Sucursal_Destino) {
+      await t.rollback();
       return res.status(400).json({
         success: false,
         error: 'Se requiere sucursal destino para transferencias'
       });
     }
-    
-    // Crear el movimiento
+
     const nuevoMovimiento = await MovimientosInventario.create({
-      // ID_Movimiento será generado automáticamente por la base de datos
       ID_Inventario,
       Tipo_Movimiento,
       Cantidad,
@@ -155,62 +154,59 @@ exports.createMovimiento = async (req, res) => {
       ID_Bodeguero,
       Comentario,
       ID_Sucursal_Destino
-    });
-    
-    // Actualizar el stock según el tipo de movimiento
+    }, { transaction: t });
+
     switch(Tipo_Movimiento) {
       case 'Entrada':
         await inventario.update({
           Stock_Actual: inventario.Stock_Actual + parseInt(Cantidad),
           Ultima_Actualizacion: new Date()
-        });
+        }, { transaction: t });
         break;
       case 'Salida':
         await inventario.update({
           Stock_Actual: inventario.Stock_Actual - parseInt(Cantidad),
           Ultima_Actualizacion: new Date()
-        });
+        }, { transaction: t });
         break;
       case 'Reserva':
         await inventario.update({
           Stock_Actual: inventario.Stock_Actual - parseInt(Cantidad),
           Stock_Reservado: inventario.Stock_Reservado + parseInt(Cantidad),
           Ultima_Actualizacion: new Date()
-        });
+        }, { transaction: t });
         break;
       case 'Ajuste':
-        // Para ajustes, Cantidad es el nuevo valor absoluto
         await inventario.update({
           Stock_Actual: parseInt(Cantidad),
           Ultima_Actualizacion: new Date()
-        });
+        }, { transaction: t });
         break;
       case 'Transferencia':
-        // Disminuir el stock en origen
         await inventario.update({
           Stock_Actual: inventario.Stock_Actual - parseInt(Cantidad),
           Ultima_Actualizacion: new Date()
-        });
+        }, { transaction: t });
         
-        // Si existe un inventario en el destino, aumentar el stock
         const inventarioDestino = await Inventario.findOne({
           where: {
             ID_Producto: inventario.ID_Producto,
             ID_Sucursal: ID_Sucursal_Destino
-          }
+          },
+          transaction: t
         });
         
         if (inventarioDestino) {
           await inventarioDestino.update({
             Stock_Actual: inventarioDestino.Stock_Actual + parseInt(Cantidad),
             Ultima_Actualizacion: new Date()
-          });
+          }, { transaction: t });
         }
-        // Si no existe inventario en destino, se podría crear uno nuevo
         break;
     }
-    
-    // Obtener el movimiento con sus relaciones
+
+    await t.commit(); // Confirmar la transacción si todo fue bien
+
     const movimientoCompleto = await MovimientosInventario.findByPk(nuevoMovimiento.ID_Movimiento, {
       include: [
         { 
@@ -220,13 +216,14 @@ exports.createMovimiento = async (req, res) => {
         }
       ]
     });
-    
+
     return res.status(201).json({
       success: true,
       message: 'Movimiento creado exitosamente',
       data: movimientoCompleto
     });
   } catch (error) {
+    await t.rollback(); // Revertir la transacción en caso de error
     console.error('Error al crear movimiento:', error);
     return res.status(500).json({
       success: false,
