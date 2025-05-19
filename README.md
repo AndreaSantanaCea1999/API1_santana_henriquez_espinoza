@@ -139,4 +139,4 @@ Por favor, sigue las guías de estilo y contribución del proyecto si deseas col
 
 ## Licencia
 
-(Especifica tu licencia aquí, por ejemplo, MIT, Apache 2.0, etc. Si no tienes una, puedes omitirlo o poner "Propietaria")
+propietaria
