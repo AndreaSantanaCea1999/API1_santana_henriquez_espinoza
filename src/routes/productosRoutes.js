@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const productoController = require('../controllers/productoController');
+const productoController = require('../controllers/productosController'); // Corregido a plural
 
 // Rutas para productos
 router.get('/', productoController.getAllProductos);

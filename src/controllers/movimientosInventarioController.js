@@ -143,13 +143,9 @@ exports.createMovimiento = async (req, res) => {
       });
     }
     
-    // Obtener el máximo ID actual y calcular el siguiente
-    const maxId = await MovimientosInventario.max('ID_Movimiento');
-    const nextId = (maxId !== null ? maxId : 0) + 1;
-    
     // Crear el movimiento
     const nuevoMovimiento = await MovimientosInventario.create({
-      ID_Movimiento: nextId,
+      // ID_Movimiento será generado automáticamente por la base de datos
       ID_Inventario,
       Tipo_Movimiento,
       Cantidad,

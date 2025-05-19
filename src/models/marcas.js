@@ -5,7 +5,7 @@ const Marcas = sequelize.define('MARCAS', {
   ID_Marca: {
     type: DataTypes.INTEGER,
     primaryKey: true,
-    autoIncrement: true
+    autoIncrement: false // Ya no es auto-incremental
   },
   Nombre: {
     type: DataTypes.STRING(100),

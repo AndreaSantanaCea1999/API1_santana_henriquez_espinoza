@@ -83,13 +83,9 @@ exports.createCategoria = async (req, res) => {
       }
     }
     
-    // Obtener el máximo ID actual y calcular el siguiente
-    const maxId = await Categorias.max('ID_Categoria');
-    const nextId = (maxId !== null ? maxId : 0) + 1;
-    
     // Crear categoría con ID explícito
     const nuevaCategoria = await Categorias.create({
-      ID_Categoria: nextId,
+      // ID_Categoria será generado automáticamente por la base de datos
       Nombre,
       Descripcion,
       ID_Categoria_Padre,

@@ -53,28 +53,44 @@ exports.getMarcaById = async (req, res) => {
 // Crear una nueva marca
 exports.createMarca = async (req, res) => {
   try {
-    const {
+    const { // Desestructurar ID_Marca del cuerpo de la solicitud
+      ID_Marca,
       Nombre,
       Descripcion,
       Logo_URL,
       Pais_Origen,
       Sitio_Web
     } = req.body;
-    
-    // Obtener el máximo ID actual y calcular el siguiente
-    const maxId = await Marcas.max('ID_Marca');
-    const nextId = (maxId !== null ? maxId : 0) + 1;
+
+    // 1. Validar que se proporcione ID_Marca
+    if (ID_Marca === undefined || ID_Marca === null) {
+      return res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'El campo ID_Marca es obligatorio.',
+      });
+    }
+
+    // 2. Verificar si ya existe una marca con ese ID_Marca
+    const idExistente = await Marcas.findByPk(ID_Marca);
+    if (idExistente) {
+      return res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: `Ya existe una marca con el ID_Marca ${ID_Marca}.`,
+      });
+    }
     
     // Crear marca
     const nuevaMarca = await Marcas.create({
-      ID_Marca: nextId,
+      ID_Marca, // Usar el ID_Marca proporcionado
       Nombre,
       Descripcion,
       Logo_URL,
       Pais_Origen,
       Sitio_Web
     });
-    
+
     return res.status(201).json({
       success: true,
       message: 'Marca creada exitosamente',
@@ -82,6 +98,19 @@ exports.createMarca = async (req, res) => {
     });
   } catch (error) {
     console.error('Error al crear marca:', error);
+    // Manejo de errores de Sequelize (validación, unicidad si alguna otra restricción falla)
+    if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: error.message,
+        errores: error.errors.map((e) => ({
+          campo: e.path,
+          tipo: e.type,
+          mensaje: e.message,
+        })),
+      });
+    }
     return res.status(500).json({
       success: false,
       error: 'Error al crear marca',

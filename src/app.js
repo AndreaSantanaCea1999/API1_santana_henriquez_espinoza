@@ -1,8 +1,7 @@
-// En src/app.js (o donde tengas tus rutas)
-
 const express = require('express');
 const cors = require('cors');
 const { sequelize, Inventario, Productos, MovimientosInventario } = require('./models');
+const mainRoutes = require('./routes/index'); // Importar el enrutador principal
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,12 +9,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Otras rutas...
+// Montar todas las rutas definidas en routes/index.js bajo el prefijo /api
+app.use('/api', mainRoutes);
 
 // Ruta para eliminar registros de inventario por ID de producto
 app.delete('/api/inventario/producto/:productoId', async (req, res) => {
   try {
-    // Buscar todos los inventarios del producto
     const inventarios = await Inventario.findAll({
       where: { ID_Producto: req.params.productoId }
     });
@@ -27,15 +26,14 @@ app.delete('/api/inventario/producto/:productoId', async (req, res) => {
       });
     }
 
-    // Obtener IDs de inventarios para eliminar movimientos relacionados
     const idsInventario = inventarios.map(inv => inv.ID_Inventario);
 
-    // Eliminar movimientos de inventario relacionados
+    // Eliminar movimientos asociados a esos inventarios
     await MovimientosInventario.destroy({
       where: { ID_Inventario: idsInventario }
     });
 
-    // Eliminar inventarios ahora que no tienen movimientos relacionados
+    // Eliminar inventarios asociados al producto
     const deletedCount = await Inventario.destroy({
       where: { ID_Producto: req.params.productoId }
     });
@@ -45,7 +43,7 @@ app.delete('/api/inventario/producto/:productoId', async (req, res) => {
       message: `${deletedCount} registros de inventario eliminados para el producto`
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error al eliminar registros de inventario por producto:', error);
     res.status(500).json({
       success: false,
       message: 'Error al eliminar registros de inventario por producto',
@@ -54,7 +52,7 @@ app.delete('/api/inventario/producto/:productoId', async (req, res) => {
   }
 });
 
-// Ruta principal de prueba
+// Ruta principal
 app.get('/', (req, res) => {
   res.json({ message: 'API de Inventario FERREMAS funcionando correctamente' });
 });

@@ -22,7 +22,7 @@ exports.getAllProveedores = async (req, res) => {
   }
 };
 
-// Obtener un proveedor por ID (incluye productos relacionados)
+// Obtener un proveedor por ID (con productos relacionados)
 exports.getProveedorById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -62,34 +62,45 @@ exports.getProveedorById = async (req, res) => {
 // Crear un nuevo proveedor
 exports.createProveedor = async (req, res) => {
   try {
-    const proveedorData = { ...req.body };
+    const { ID_Proveedor, RUT, ...otrosDatos } = req.body;
 
-    // Estandariza el campo RUT
-    if (req.body.rut && !req.body.RUT) {
-      proveedorData.RUT = req.body.rut;
-      delete proveedorData.rut;
+    // 1. Validar que se proporcione ID_Proveedor
+    if (ID_Proveedor === undefined || ID_Proveedor === null) {
+      return res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: 'El campo ID_Proveedor es obligatorio.',
+      });
     }
 
-    // Verifica si ya existe un proveedor con ese RUT
-    const proveedorExistente = await Proveedores.findOne({
-      where: { RUT: proveedorData.RUT },
+    // 2. Verificar si ya existe un proveedor con ese ID_Proveedor
+    const idExistente = await Proveedores.findByPk(ID_Proveedor);
+    if (idExistente) {
+      return res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: `Ya existe un proveedor con el ID_Proveedor ${ID_Proveedor}.`,
+      });
+    }
+
+    // Normalizar campo RUT a mayúsculas para evitar duplicados por case sensitive
+    let rutNormalizado = RUT;
+    if (rutNormalizado) {
+      rutNormalizado = rutNormalizado.toUpperCase();
+    }
+
+    // 3. Verifica si ya existe un proveedor con ese RUT
+    const rutExistente = await Proveedores.findOne({
+      where: { RUT: rutNormalizado },
     });
 
-    if (proveedorExistente) {
+    if (rutExistente) {
       return res.status(400).json({
         success: false,
         error: 'Ya existe un proveedor con ese RUT',
       });
     }
-
-    // Obtener el próximo ID (si no se usa autoIncrement)
-    const maxId = await Proveedores.max('ID_Proveedor');
-    const nextId = (maxId !== null ? maxId : 0) + 1;
-
-    const nuevoProveedor = await Proveedores.create({
-      ID_Proveedor: nextId,
-      ...proveedorData,
-    });
+    const nuevoProveedor = await Proveedores.create({ ID_Proveedor, RUT: rutNormalizado, ...otrosDatos });
 
     return res.status(201).json({
       success: true,
@@ -97,7 +108,7 @@ exports.createProveedor = async (req, res) => {
       data: nuevoProveedor,
     });
   } catch (error) {
-    console.error('Error completo:', error);
+    console.error('Error al crear proveedor:', error);
 
     if (
       error.name === 'SequelizeValidationError' ||
@@ -127,7 +138,11 @@ exports.createProveedor = async (req, res) => {
 exports.updateProveedor = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = { ...req.body };
+
+    // Normalizar RUT a mayúsculas si viene en la actualización
+    if (req.body.RUT) {
+      req.body.RUT = req.body.RUT.toUpperCase();
+    }
 
     const proveedor = await Proveedores.findByPk(id);
 
@@ -138,10 +153,10 @@ exports.updateProveedor = async (req, res) => {
       });
     }
 
-    // Validar duplicación de RUT si lo están cambiando
-    if (updateData.RUT && updateData.RUT !== proveedor.RUT) {
+    // Validar que no se duplique RUT si se cambia
+    if (req.body.RUT && req.body.RUT !== proveedor.RUT) {
       const proveedorExistente = await Proveedores.findOne({
-        where: { RUT: updateData.RUT },
+        where: { RUT: req.body.RUT },
       });
 
       if (proveedorExistente) {
@@ -152,9 +167,10 @@ exports.updateProveedor = async (req, res) => {
       }
     }
 
-    delete updateData.ID_Proveedor; // Prevenir actualización de la clave primaria
+    // No permitir modificar el ID
+    delete req.body.ID_Proveedor;
 
-    await proveedor.update(updateData);
+    await proveedor.update(req.body);
 
     return res.status(200).json({
       success: true,
@@ -171,7 +187,7 @@ exports.updateProveedor = async (req, res) => {
   }
 };
 
-// Eliminar un proveedor
+// Eliminar un proveedor (con validación de productos asociados)
 exports.deleteProveedor = async (req, res) => {
   try {
     const { id } = req.params;

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const marcaController = require('../controllers/marcaController');
+const marcaController = require('../controllers/marcasController');
 
 // Rutas para marcas
 router.get('/', marcaController.getAllMarcas);

@@ -1,153 +1,201 @@
-const { Proveedores } = require('../models');
+const { Productos, Categorias, Marcas, Proveedores } = require('../models'); // Importar los modelos necesarios
 
-// Obtener todos los proveedores
-exports.getAllProveedores = async (req, res) => {
+// Obtener todos los productos
+exports.getAllProductos = async (req, res) => {
   try {
-    const proveedores = await Proveedores.findAll();
-    res.status(200).json({
+    const productos = await Productos.findAll({
+      include: [ // Incluir relaciones si es necesario
+        { model: Categorias, as: 'categoria' },
+        { model: Marcas, as: 'marca' },
+        { model: Proveedores, as: 'proveedor' },
+      ],
+    });
+    return res.status(200).json({
       success: true,
-      count: proveedores.length,
-      data: proveedores
+      count: productos.length,
+      data: productos,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: 'Error al obtener proveedores',
-      message: error.message
+      error: 'Error al obtener productos',
+      message: error.message,
     });
   }
 };
 
-// Obtener un proveedor por ID
-exports.getProveedorById = async (req, res) => {
+// Obtener un producto por ID
+exports.getProductoById = async (req, res) => {
   try {
-    const proveedor = await Proveedores.findByPk(req.params.id);
-    
-    if (!proveedor) {
+    const producto = await Productos.findByPk(req.params.id, {
+      include: [
+        { model: Categorias, as: 'categoria' },
+        { model: Marcas, as: 'marca' },
+        { model: Proveedores, as: 'proveedor' },
+      ],
+    });
+
+    if (!producto) {
       return res.status(404).json({
         success: false,
-        message: 'Proveedor no encontrado'
+        message: 'Producto no encontrado',
       });
     }
-    
-    res.status(200).json({
+
+    return res.status(200).json({
       success: true,
-      data: proveedor
+      data: producto,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: 'Error al obtener el proveedor',
-      message: error.message
+      error: 'Error al obtener el producto',
+      message: error.message,
     });
   }
 };
 
-// Crear un nuevo proveedor
-exports.createProveedor = async (req, res) => {
+// Crear un nuevo producto
+exports.createProducto = async (req, res) => {
   try {
-    // Transformación de datos para asegurar que RUT está presente
-    const proveedorData = {
-      ...req.body
-    };
-    
-    // Si el cliente envió 'rut' en minúsculas, lo convertimos a 'RUT'
-    if (req.body.rut && !req.body.RUT) {
-      proveedorData.RUT = req.body.rut;
-      delete proveedorData.rut; // Eliminamos el campo en minúsculas
-    }
-    
-    // Verificar que RUT existe
-    if (!proveedorData.RUT) {
+    // ID_Producto es auto-incremental, no se envía en el body
+    const { Codigo, Nombre, ID_Categoria, ID_Marca, Precio_Venta, ...otrosDatos } = req.body;
+
+    // Validaciones básicas (puedes añadir más)
+    if (!Codigo || !Nombre || !ID_Categoria || !ID_Marca || Precio_Venta === undefined) {
       return res.status(400).json({
         success: false,
         error: 'Error de validación',
-        message: 'El RUT del proveedor es obligatorio'
+        message: 'Campos obligatorios faltantes: Codigo, Nombre, ID_Categoria, ID_Marca, Precio_Venta',
       });
     }
-    
-    const nuevoProveedor = await Proveedores.create(proveedorData);
-    
-    res.status(201).json({
+
+    // Verificar si el código de producto ya existe
+    const codigoExistente = await Productos.findOne({ where: { Codigo } });
+    if (codigoExistente) {
+      return res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: `Ya existe un producto con el código ${Codigo}.`,
+      });
+    }
+
+    const nuevoProducto = await Productos.create({
+      Codigo,
+      Nombre,
+      ID_Categoria,
+      ID_Marca,
+      Precio_Venta,
+      ...otrosDatos,
+    });
+
+    return res.status(201).json({
       success: true,
-      message: 'Proveedor creado exitosamente',
-      data: nuevoProveedor
+      message: 'Producto creado exitosamente',
+      data: nuevoProducto,
     });
   } catch (error) {
     console.error(error);
-    res.status(400).json({
+    // Manejo de errores de Sequelize (validación, unicidad)
+    if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        error: 'Error de validación',
+        message: error.message,
+        errores: error.errors.map((e) => ({
+          campo: e.path,
+          tipo: e.type,
+          mensaje: e.message,
+        })),
+      });
+    }
+    return res.status(500).json({
       success: false,
-      error: 'Error al crear proveedor',
-      message: error.message
+      error: 'Error al crear el producto',
+      message: error.message,
     });
   }
 };
 
-// Actualizar un proveedor
-exports.updateProveedor = async (req, res) => {
+// Actualizar un producto
+exports.updateProducto = async (req, res) => {
   try {
-    const proveedor = await Proveedores.findByPk(req.params.id);
-    
-    if (!proveedor) {
+    const producto = await Productos.findByPk(req.params.id);
+
+    if (!producto) {
       return res.status(404).json({
         success: false,
-        message: 'Proveedor no encontrado'
+        message: 'Producto no encontrado',
       });
     }
-    
-    // Misma transformación para actualizaciones
-    const proveedorData = {
-      ...req.body
-    };
-    
-    if (req.body.rut && !req.body.RUT) {
-      proveedorData.RUT = req.body.rut;
-      delete proveedorData.rut;
+
+    // No permitir modificar el ID_Producto ni el Codigo (generalmente el código es inmutable o se maneja con cuidado)
+    delete req.body.ID_Producto;
+    if (req.body.Codigo && req.body.Codigo !== producto.Codigo) {
+        // Opcional: Validar si el nuevo código ya existe para otro producto
+        const codigoExistente = await Productos.findOne({ where: { Codigo: req.body.Codigo } });
+        if (codigoExistente) {
+            return res.status(400).json({
+                success: false,
+                error: 'Error de validación',
+                message: `Ya existe otro producto con el código ${req.body.Codigo}.`,
+            });
+        }
     }
-    
-    await proveedor.update(proveedorData);
-    
-    res.status(200).json({
+
+    await producto.update(req.body);
+
+    return res.status(200).json({
       success: true,
-      message: 'Proveedor actualizado exitosamente',
-      data: proveedor
+      message: 'Producto actualizado exitosamente',
+      data: producto,
     });
   } catch (error) {
     console.error(error);
-    res.status(400).json({
+    // Similar manejo de errores de validación que en createProducto
+    return res.status(500).json({
       success: false,
-      error: 'Error al actualizar el proveedor',
-      message: error.message
+      error: 'Error al actualizar el producto',
+      message: error.message,
     });
   }
 };
 
-// Eliminar un proveedor
-exports.deleteProveedor = async (req, res) => {
+// Eliminar un producto
+exports.deleteProducto = async (req, res) => {
   try {
-    const proveedor = await Proveedores.findByPk(req.params.id);
-    
-    if (!proveedor) {
+    const producto = await Productos.findByPk(req.params.id);
+
+    if (!producto) {
       return res.status(404).json({
         success: false,
-        message: 'Proveedor no encontrado'
+        message: 'Producto no encontrado',
       });
     }
-    
-    await proveedor.destroy();
-    
-    res.status(200).json({
+
+    // Opcional: Verificar si el producto está en algún inventario antes de eliminar
+    // const inventarioAsociado = await Inventario.findOne({ where: { ID_Producto: req.params.id } });
+    // if (inventarioAsociado) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     error: 'No se puede eliminar el producto porque tiene registros de inventario asociados.',
+    //   });
+    // }
+
+    await producto.destroy();
+
+    return res.status(200).json({
       success: true,
-      message: 'Proveedor eliminado exitosamente'
+      message: 'Producto eliminado exitosamente',
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      error: 'Error al eliminar el proveedor',
-      message: error.message
+      error: 'Error al eliminar el producto',
+      message: error.message,
     });
   }
 };

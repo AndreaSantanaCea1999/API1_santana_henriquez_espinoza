@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const proveedorController = require('../controllers/proveedorController');
+const proveedoresController = require('../controllers/proveedoresController'); // nombre corregido
 
-// Rutas para proveedores
-router.get('/', proveedorController.getAllProveedores);
-router.get('/:id', proveedorController.getProveedorById);
-router.post('/', proveedorController.createProveedor);
-router.put('/:id', proveedorController.updateProveedor);
-router.delete('/:id', proveedorController.deleteProveedor);
+// Rutas CRUD para proveedores
+router.get('/', proveedoresController.getAllProveedores);
+router.get('/:id', proveedoresController.getProveedorById);
+router.post('/', proveedoresController.createProveedor);
+router.put('/:id', proveedoresController.updateProveedor);
+router.delete('/:id', proveedoresController.deleteProveedor);
 
 module.exports = router;
