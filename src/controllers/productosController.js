@@ -1,19 +1,56 @@
-const { Productos, Categorias, Marcas, Proveedores } = require('../models'); // Importar los modelos necesarios
+const { Productos, Categorias, Marcas, Proveedores } = require('../models');
+const divisasService = require('../services/divisasService');
 
-// Obtener todos los productos
+// Obtener todos los productos (con soporte de divisas)
 exports.getAllProductos = async (req, res) => {
   try {
+    const { divisa } = req.query;
+
     const productos = await Productos.findAll({
-      include: [ // Incluir relaciones si es necesario
+      include: [
         { model: Categorias, as: 'categoria' },
         { model: Marcas, as: 'marca' },
         { model: Proveedores, as: 'proveedor' },
       ],
     });
+
+    if (!divisa || divisa === 'CLP') {
+      return res.status(200).json({
+        success: true,
+        count: productos.length,
+        data: productos,
+      });
+    }
+
+    const productosConvertidos = [];
+
+    for (const producto of productos) {
+      let productoObj = producto.toJSON();
+
+      try {
+        const conversion = await divisasService.obtenerPrecioEnDivisa(
+          producto.Precio_Venta,
+          'CLP',
+          divisa
+        );
+
+        productoObj.Precio_Original = producto.Precio_Venta;
+        productoObj.Divisa_Original = 'CLP';
+        productoObj.Precio_Venta_Convertido = conversion.montoConvertido;
+        productoObj.Divisa_Convertida = divisa;
+        productoObj.Tasa_Cambio = conversion.tasaCambio;
+        productoObj.Fecha_Cambio = conversion.fecha;
+      } catch (error) {
+        console.error(`Error al convertir producto ${producto.ID_Producto}:`, error.message);
+      }
+
+      productosConvertidos.push(productoObj);
+    }
+
     return res.status(200).json({
       success: true,
-      count: productos.length,
-      data: productos,
+      count: productosConvertidos.length,
+      data: productosConvertidos,
     });
   } catch (error) {
     console.error(error);
@@ -25,10 +62,13 @@ exports.getAllProductos = async (req, res) => {
   }
 };
 
-// Obtener un producto por ID
+// Obtener un producto por ID (con soporte de divisas)
 exports.getProductoById = async (req, res) => {
   try {
-    const producto = await Productos.findByPk(req.params.id, {
+    const { id } = req.params;
+    const { divisa } = req.query;
+
+    const producto = await Productos.findByPk(id, {
       include: [
         { model: Categorias, as: 'categoria' },
         { model: Marcas, as: 'marca' },
@@ -43,9 +83,30 @@ exports.getProductoById = async (req, res) => {
       });
     }
 
+    let productoResponse = producto.toJSON();
+
+    if (divisa && divisa !== 'CLP') {
+      try {
+        const conversion = await divisasService.obtenerPrecioEnDivisa(
+          producto.Precio_Venta,
+          'CLP',
+          divisa
+        );
+
+        productoResponse.Precio_Original = producto.Precio_Venta;
+        productoResponse.Divisa_Original = 'CLP';
+        productoResponse.Precio_Venta_Convertido = conversion.montoConvertido;
+        productoResponse.Divisa_Convertida = divisa;
+        productoResponse.Tasa_Cambio = conversion.tasaCambio;
+        productoResponse.Fecha_Cambio = conversion.fecha;
+      } catch (error) {
+        console.error('Error al convertir precio:', error.message);
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      data: producto,
+      data: productoResponse,
     });
   } catch (error) {
     console.error(error);
@@ -60,10 +121,8 @@ exports.getProductoById = async (req, res) => {
 // Crear un nuevo producto
 exports.createProducto = async (req, res) => {
   try {
-    // ID_Producto es auto-incremental, no se envía en el body
     const { Codigo, Nombre, ID_Categoria, ID_Marca, Precio_Venta, ...otrosDatos } = req.body;
 
-    // Validaciones básicas (puedes añadir más)
     if (!Codigo || !Nombre || !ID_Categoria || !ID_Marca || Precio_Venta === undefined) {
       return res.status(400).json({
         success: false,
@@ -72,7 +131,6 @@ exports.createProducto = async (req, res) => {
       });
     }
 
-    // Verificar si el código de producto ya existe
     const codigoExistente = await Productos.findOne({ where: { Codigo } });
     if (codigoExistente) {
       return res.status(400).json({
@@ -98,7 +156,6 @@ exports.createProducto = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    // Manejo de errores de Sequelize (validación, unicidad)
     if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({
         success: false,
@@ -131,18 +188,17 @@ exports.updateProducto = async (req, res) => {
       });
     }
 
-    // No permitir modificar el ID_Producto ni el Codigo (generalmente el código es inmutable o se maneja con cuidado)
     delete req.body.ID_Producto;
+
     if (req.body.Codigo && req.body.Codigo !== producto.Codigo) {
-        // Opcional: Validar si el nuevo código ya existe para otro producto
-        const codigoExistente = await Productos.findOne({ where: { Codigo: req.body.Codigo } });
-        if (codigoExistente) {
-            return res.status(400).json({
-                success: false,
-                error: 'Error de validación',
-                message: `Ya existe otro producto con el código ${req.body.Codigo}.`,
-            });
-        }
+      const codigoExistente = await Productos.findOne({ where: { Codigo: req.body.Codigo } });
+      if (codigoExistente) {
+        return res.status(400).json({
+          success: false,
+          error: 'Error de validación',
+          message: `Ya existe otro producto con el código ${req.body.Codigo}.`,
+        });
+      }
     }
 
     await producto.update(req.body);
@@ -154,7 +210,6 @@ exports.updateProducto = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    // Similar manejo de errores de validación que en createProducto
     return res.status(500).json({
       success: false,
       error: 'Error al actualizar el producto',
@@ -174,15 +229,6 @@ exports.deleteProducto = async (req, res) => {
         message: 'Producto no encontrado',
       });
     }
-
-    // Opcional: Verificar si el producto está en algún inventario antes de eliminar
-    // const inventarioAsociado = await Inventario.findOne({ where: { ID_Producto: req.params.id } });
-    // if (inventarioAsociado) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     error: 'No se puede eliminar el producto porque tiene registros de inventario asociados.',
-    //   });
-    // }
 
     await producto.destroy();
 
