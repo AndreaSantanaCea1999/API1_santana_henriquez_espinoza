@@ -140,6 +140,17 @@ exports.createProducto = async (req, res) => {
       });
     }
 
+    // Log para depuración: ver los datos antes de crear
+    console.log('--- Datos recibidos para crear producto ---');
+    console.log({
+      Codigo,
+      Nombre,
+      ID_Categoria,
+      ID_Marca,
+      Precio_Venta,
+      ...otrosDatos
+    });
+
     const nuevoProducto = await Productos.create({
       Codigo,
       Nombre,

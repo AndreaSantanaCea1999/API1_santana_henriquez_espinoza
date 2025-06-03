@@ -42,19 +42,12 @@ const Usuario = sequelize.define('USUARIO', {
     validate: {
       isIn: [['Activo', 'Inactivo', 'Suspendido']]
     }
-  },
-  Fecha_Registro: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-    allowNull: false
-  },
-  Ultima_Actualizacion: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
   }
 }, {
   tableName: 'usuario',
-  timestamps: false
+  timestamps: true,
+  createdAt: 'Fecha_Registro',
+  updatedAt: 'Ultima_Actualizacion'
 });
 
 module.exports = Usuario;

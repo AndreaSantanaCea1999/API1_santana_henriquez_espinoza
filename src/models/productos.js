@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const Productos = sequelize.define('PRODUCTOS', {
+const Productos = sequelize.define('productos', {
   ID_Producto: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -17,10 +17,12 @@ const Productos = sequelize.define('PRODUCTOS', {
     allowNull: false
   },
   Descripcion: {
-    type: DataTypes.STRING(1000)
+    type: DataTypes.STRING(1000),
+    allowNull: true
   },
   Especificaciones: {
-    type: DataTypes.TEXT
+    type: DataTypes.TEXT,
+    allowNull: true
   },
   ID_Categoria: {
     type: DataTypes.INTEGER,
@@ -31,18 +33,21 @@ const Productos = sequelize.define('PRODUCTOS', {
     allowNull: false
   },
   ID_Proveedor: {
-    type: DataTypes.INTEGER
+    type: DataTypes.INTEGER,
+    allowNull: true
   },
   Codigo_Proveedor: {
-    type: DataTypes.STRING(50)
+    type: DataTypes.STRING(50),
+    allowNull: true
   },
   ID_Divisa: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    defaultValue: 1 // Asumiendo 1 para CLP, si es el caso más común
+    defaultValue: 1
   },
   Precio_Compra: {
-    type: DataTypes.DECIMAL(10, 2)
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
   },
   Precio_Venta: {
     type: DataTypes.DECIMAL(10, 2),
@@ -50,38 +55,52 @@ const Productos = sequelize.define('PRODUCTOS', {
   },
   Descuento_Maximo: {
     type: DataTypes.DECIMAL(5, 2),
-    defaultValue: 0.00
+    allowNull: true,
+    defaultValue: 0
   },
   Tasa_Impuesto: {
     type: DataTypes.DECIMAL(5, 2),
+    allowNull: true,
     defaultValue: 19
   },
   Peso: {
-    type: DataTypes.DECIMAL(8, 2)
+    type: DataTypes.DECIMAL(8, 2),
+    allowNull: true
   },
   Dimensiones: {
-    type: DataTypes.STRING(50)
+    type: DataTypes.STRING(50),
+    allowNull: true
   },
   Imagen_URL: {
-    type: DataTypes.STRING(255)
+    type: DataTypes.STRING(255),
+    allowNull: true
   },
   Destacado: {
     type: DataTypes.INTEGER,
+    allowNull: true,
     defaultValue: 0
   },
   Estado: {
     type: DataTypes.STRING(20),
+    allowNull: true,
+    defaultValue: 'Activo',
     validate: {
       isIn: [['Activo', 'Inactivo', 'Descontinuado']]
-    },
-    defaultValue: 'Activo'
+    }
   },
-  // Sequelize manejará createdAt y updatedAt si timestamps es true
+  Fecha_Creacion: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  },
+  Ultima_Actualizacion: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  }
 }, {
   tableName: 'productos',
-  timestamps: true,
-  createdAt: 'Fecha_Creacion', 
-  updatedAt: 'Ultima_Actualizacion' // Mapear updatedAt a Ultima_Actualizacion
+  timestamps: false
 });
 
 module.exports = Productos;
