@@ -38,7 +38,8 @@ const Productos = sequelize.define('PRODUCTOS', {
   },
   ID_Divisa: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    defaultValue: 1 // Asumiendo 1 para CLP, si es el caso más común
   },
   Precio_Compra: {
     type: DataTypes.DECIMAL(10, 2)
@@ -48,7 +49,8 @@ const Productos = sequelize.define('PRODUCTOS', {
     allowNull: false
   },
   Descuento_Maximo: {
-    type: DataTypes.DECIMAL(5, 2)
+    type: DataTypes.DECIMAL(5, 2),
+    defaultValue: 0.00
   },
   Tasa_Impuesto: {
     type: DataTypes.DECIMAL(5, 2),
@@ -74,18 +76,12 @@ const Productos = sequelize.define('PRODUCTOS', {
     },
     defaultValue: 'Activo'
   },
-  Fecha_Creacion: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-    allowNull: false
-  },
-  Ultima_Actualizacion: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
-  }
+  // Sequelize manejará createdAt y updatedAt si timestamps es true
 }, {
-  tableName: 'PRODUCTOS',
-  timestamps: false
+  tableName: 'productos',
+  timestamps: true,
+  createdAt: 'Fecha_Creacion', 
+  updatedAt: 'Ultima_Actualizacion' // Mapear updatedAt a Ultima_Actualizacion
 });
 
 module.exports = Productos;

@@ -45,7 +45,7 @@ const DetallesPedido = sequelize.define('DETALLES_PEDIDO', {
     defaultValue: 'Pendiente'
   }
 }, {
-  tableName: 'DETALLES_PEDIDO',
+  tableName: 'detalles_pedido',
   timestamps: false
 });
 

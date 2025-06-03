@@ -24,7 +24,7 @@ const Marcas = sequelize.define('MARCAS', {
     type: DataTypes.STRING(255)
   }
 }, {
-  tableName: 'MARCAS',
+  tableName: 'marcas',
   timestamps: false
 });
 

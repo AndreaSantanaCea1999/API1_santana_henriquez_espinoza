@@ -42,7 +42,7 @@ const MovimientosInventario = sequelize.define('MOVIMIENTOS_INVENTARIO', {
     type: DataTypes.INTEGER
   }
 }, {
-  tableName: 'MOVIMIENTOS_INVENTARIO',
+  tableName: 'movimientos_inventario',
   timestamps: false
 });
 

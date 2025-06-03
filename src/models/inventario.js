@@ -47,7 +47,7 @@ const Inventario = sequelize.define('INVENTARIO', {
     type: DataTypes.INTEGER
   }
 }, {
-  tableName: 'INVENTARIO',
+  tableName: 'inventario',
   timestamps: false
 });
 

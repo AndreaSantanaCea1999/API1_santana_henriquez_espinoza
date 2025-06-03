@@ -53,7 +53,7 @@ const Usuario = sequelize.define('USUARIO', {
     defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: 'USUARIO',
+  tableName: 'usuario',
   timestamps: false
 });
 

@@ -102,7 +102,7 @@ const Pedidos = sequelize.define('PEDIDOS', {
     }
   }
 }, {
-  tableName: 'PEDIDOS',
+  tableName: 'pedidos',
   timestamps: false
 });
 
