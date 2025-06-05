@@ -29,7 +29,7 @@ const Categorias = sequelize.define('CATEGORIAS', {
     type: DataTypes.INTEGER
   }
 }, {
-  tableName: 'CATEGORIAS',
+  tableName: 'categorias',
   timestamps: false
 });
 
