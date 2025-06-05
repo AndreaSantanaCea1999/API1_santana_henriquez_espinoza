@@ -1,53 +1,68 @@
+// src/models/usuarios.js
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const Usuario = sequelize.define('USUARIO', {
-  ID_Usuario: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-    allowNull: false
-  },
-  Nombre: {
-    type: DataTypes.STRING(100),
-    allowNull: false
-  },
-  Email: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    unique: true,
-    validate: {
-      isEmail: true
+const Usuario = sequelize.define(
+  'Usuario',
+  {
+    ID_Usuario: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    Nombre: {
+      type: DataTypes.STRING(100),
+      allowNull: false
+    },
+    Email: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      unique: true,
+      validate: {
+        isEmail: true
+      }
+    },
+    RUT: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      unique: true
+    },
+    Telefono: {
+      type: DataTypes.STRING(20),
+      allowNull: true
+    },
+    Direccion: {
+      type: DataTypes.STRING(200),
+      allowNull: true
+    },
+    Ciudad: {
+      type: DataTypes.STRING(50),
+      allowNull: true
+    },
+    Region: {
+      type: DataTypes.STRING(50),
+      allowNull: true
+    },
+    Estado: {
+      type: DataTypes.STRING(20),
+      defaultValue: 'Activo',
+      validate: {
+        isIn: [['Activo', 'Inactivo', 'Suspendido']]
+      }
+    },
+    Fecha_Registro: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
+    Ultima_Actualizacion: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
     }
   },
-  RUT: {
-    type: DataTypes.STRING(20),
-    unique: true
-  },
-  Telefono: {
-    type: DataTypes.STRING(20)
-  },
-  Direccion: {
-    type: DataTypes.STRING(200)
-  },
-  Ciudad: {
-    type: DataTypes.STRING(50)
-  },
-  Region: {
-    type: DataTypes.STRING(50)
-  },
-  Estado: {
-    type: DataTypes.STRING(20),
-    defaultValue: 'Activo',
-    validate: {
-      isIn: [['Activo', 'Inactivo', 'Suspendido']]
-    }
+  {
+    tableName: 'usuario',
+    timestamps: false
   }
-}, {
-  tableName: 'usuario',
-  timestamps: true,
-  createdAt: 'Fecha_Registro',
-  updatedAt: 'Ultima_Actualizacion'
-});
+);
 
 module.exports = Usuario;
