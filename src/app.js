@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 
-// Importar todos los modelos desde el index actualizado
+// Importar todos los modelos desde el index
 const { 
   sequelize, 
   Inventario, 
@@ -21,13 +21,13 @@ const PORT = process.env.PORT || 3000;
 // Middlewares
 app.use(cors());
 app.use(express.json());
-app.use(morgan('combined')); // Log de peticiones HTTP
+app.use(morgan('combined'));
 
-// Montar todas las rutas definidas en routes/index.js bajo el prefijo /api
+// Rutas montadas desde routes/index.js
 app.use('/api', mainRoutes);
 
-// Ruta para eliminar registros de inventario por ID de producto (manteniendo funcionalidad existente)
-app.delete('/api/inventario/producto/:productoId', async (req, res) => {
+// Ruta para eliminar inventario por producto (movida a inventarioRoutes.js)
+/* app.delete('/api/inventario/producto/:productoId', async (req, res) => {
   try {
     const inventarios = await Inventario.findAll({
       where: { ID_Producto: req.params.productoId }
@@ -42,12 +42,12 @@ app.delete('/api/inventario/producto/:productoId', async (req, res) => {
 
     const idsInventario = inventarios.map(inv => inv.ID_Inventario);
 
-    // Eliminar movimientos asociados a esos inventarios
+    // Eliminar movimientos asociados
     await MovimientosInventario.destroy({
       where: { ID_Inventario: idsInventario }
     });
 
-    // Eliminar inventarios asociados al producto
+    // Eliminar inventario
     const deletedCount = await Inventario.destroy({
       where: { ID_Producto: req.params.productoId }
     });
@@ -64,8 +64,9 @@ app.delete('/api/inventario/producto/:productoId', async (req, res) => {
       error: error.message
     });
   }
-});
+}); */
 
+// ================================
 // Ruta principal
 app.get('/', (req, res) => {
   res.json({ 
@@ -76,7 +77,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Middleware de manejo de errores global
+// Middleware de errores globales
 app.use((error, req, res, next) => {
   console.error('Error no manejado:', error);
   res.status(500).json({
@@ -95,10 +96,10 @@ app.use('*', (req, res) => {
   });
 });
 
-// Función para sincronizar la base de datos (opcional)
+// Sincronización (solo si es necesario en desarrollo)
 const syncDatabase = async () => {
   try {
-    await sequelize.sync({ alter: false }); // No alterar tablas existentes
+    await sequelize.sync({ alter: false });
     console.log('Modelos sincronizados con la base de datos.');
   } catch (error) {
     console.error('Error al sincronizar modelos:', error);
@@ -109,12 +110,11 @@ const syncDatabase = async () => {
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
   console.log(`📖 Documentación de la API en http://localhost:${PORT}/api`);
-  
+
   try {
     await sequelize.authenticate();
     console.log('✅ Conexión a la base de datos establecida correctamente.');
-    
-    // Opcional: Sincronizar modelos (solo en desarrollo)
+
     if (process.env.NODE_ENV === 'development') {
       await syncDatabase();
     }
