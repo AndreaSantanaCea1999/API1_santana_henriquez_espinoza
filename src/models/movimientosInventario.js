@@ -2,8 +2,8 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const MovimientosInventario = sequelize.define(
-  'MovimientosInventario',
+const MovimientosInventario = sequelize.define( 
+  'movimientos_inventario',
   {
     ID_Movimiento: {
       type: DataTypes.INTEGER,

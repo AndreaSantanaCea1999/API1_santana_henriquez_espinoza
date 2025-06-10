@@ -3,7 +3,7 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
 const Proveedores = sequelize.define(
-  'Proveedores',
+  'proveedores',
   {
     ID_Proveedor: {
       type: DataTypes.INTEGER,
