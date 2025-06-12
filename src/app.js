@@ -1,12 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+require('dotenv').config();
 
-// Importar todos los modelos desde el index
-const { 
-  sequelize, 
-  Inventario, 
-  Productos, 
+const {
+  sequelize,
+  Inventario,
+  Productos,
   MovimientosInventario,
   Usuario,
   Pedidos,
@@ -18,74 +18,24 @@ const mainRoutes = require('./routes/index');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
+// Middlewares globales
 app.use(cors());
 app.use(express.json());
-app.use(morgan('combined'));
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
-// Rutas montadas desde routes/index.js
-app.use('/api', mainRoutes);
-
-// Ruta para eliminar inventario por producto (movida a inventarioRoutes.js)
-/* app.delete('/api/inventario/producto/:productoId', async (req, res) => {
-  try {
-    const inventarios = await Inventario.findAll({
-      where: { ID_Producto: req.params.productoId }
-    });
-
-    if (inventarios.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'No se encontraron registros de inventario para el producto'
-      });
-    }
-
-    const idsInventario = inventarios.map(inv => inv.ID_Inventario);
-
-    // Eliminar movimientos asociados
-    await MovimientosInventario.destroy({
-      where: { ID_Inventario: idsInventario }
-    });
-
-    // Eliminar inventario
-    const deletedCount = await Inventario.destroy({
-      where: { ID_Producto: req.params.productoId }
-    });
-
-    res.status(200).json({
-      success: true,
-      message: `${deletedCount} registros de inventario eliminados para el producto`
-    });
-  } catch (error) {
-    console.error('Error al eliminar registros de inventario por producto:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al eliminar registros de inventario por producto',
-      error: error.message
-    });
-  }
-}); */
-
-// ================================
-// Ruta principal
+// Ruta raíz
 app.get('/', (req, res) => {
-  res.json({ 
-    message: 'API de Inventario y Ventas FERREMAS funcionando correctamente',
+  res.status(200).json({
+    message: '📦 API de Inventario y Ventas FERREMAS funcionando correctamente',
     version: '1.0.0',
     documentation: '/api',
     status: 'active'
   });
 });
 
-// Middleware de errores globales
-app.use((error, req, res, next) => {
-  console.error('Error no manejado:', error);
-  res.status(500).json({
-    success: false,
-    message: 'Error interno del servidor',
-    error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
-  });
-});
+// Rutas principales
+app.use('/api', mainRoutes);
 
 // Middleware para rutas no encontradas
 app.use('*', (req, res) => {
@@ -96,31 +46,24 @@ app.use('*', (req, res) => {
   });
 });
 
-// Sincronización (solo si es necesario en desarrollo)
-const syncDatabase = async () => {
+// Conexión a base de datos y lanzamiento del servidor
+const startServer = async () => {
   try {
-    await sequelize.sync({ alter: false });
-    console.log('Modelos sincronizados con la base de datos.');
+    await sequelize.authenticate();
+    console.log('✅ Conexión a la base de datos establecida');
+    
+    await sequelize.sync({ alter: false }); // Usa alter: true con precaución
+    console.log('📦 Modelos sincronizados correctamente');
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    });
   } catch (error) {
-    console.error('Error al sincronizar modelos:', error);
+    console.error('❌ Error al iniciar el servidor o conectar a la base de datos:', error);
+    process.exit(1); // Detiene el proceso si hay error
   }
 };
 
-// Iniciar servidor y conectar a la base de datos
-app.listen(PORT, async () => {
-  console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
-  console.log(`📖 Documentación de la API en http://localhost:${PORT}/api`);
-
-  try {
-    await sequelize.authenticate();
-    console.log('✅ Conexión a la base de datos establecida correctamente.');
-
-    if (process.env.NODE_ENV === 'development') {
-      await syncDatabase();
-    }
-  } catch (error) {
-    console.error('❌ Error al conectar con la base de datos:', error);
-  }
-});
+startServer();
 
 module.exports = app;

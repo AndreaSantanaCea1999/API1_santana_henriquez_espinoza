@@ -3,7 +3,7 @@
 // Importa la instancia de Sequelize desde config/database.js
 const { sequelize } = require('../config/database');
 
-// Importa los archivos modelo (asegúrate de que el nombre del archivo coincida exactamente):
+// Importa los archivos modelo
 const Productos             = require('./productos');
 const Inventario            = require('./inventario');
 const MovimientosInventario = require('./movimientosInventario');
@@ -13,6 +13,7 @@ const Proveedores           = require('./proveedores');
 const Usuario               = require('./usuarios');
 const Pedidos               = require('./pedidos');
 const DetallesPedido        = require('./detallesPedido');
+const Sucursales            = require('./sucursales'); // ← nuevo modelo agregado
 
 // ======================
 // === Relaciones actuales (sincronizadas con tu base de datos)
@@ -78,11 +79,7 @@ MovimientosInventario.belongsTo(Inventario, {
   as: 'inventario'
 });
 
-// ======================
-// === Nuevas relaciones para Pedidos y Usuarios
-// ======================
-
-// 7) Pedidos ↔ DetallesPedido (Un Pedido tiene muchos Detalles, cada Detalle pertenece a un Pedido)
+// 7) Pedidos ↔ DetallesPedido
 Pedidos.hasMany(DetallesPedido, {
   foreignKey: 'ID_Pedido',
   as: 'detalles'
@@ -92,7 +89,7 @@ DetallesPedido.belongsTo(Pedidos, {
   as: 'pedido'
 });
 
-// 8) DetallesPedido ↔ Productos (Cada Detalle pertenece a un Producto, un Producto puede estar en muchos Detalles)
+// 8) DetallesPedido ↔ Productos
 DetallesPedido.belongsTo(Productos, {
   foreignKey: 'ID_Producto',
   as: 'producto'
@@ -122,22 +119,33 @@ Pedidos.belongsTo(Usuario, {
   as: 'vendedor'
 });
 
+// 11) Sucursales ↔ Inventario (NUEVA RELACIÓN)
+Sucursales.hasMany(Inventario, {
+  foreignKey: 'ID_Sucursal',
+  as: 'inventarios'
+});
+Inventario.belongsTo(Sucursales, {
+  foreignKey: 'ID_Sucursal',
+  as: 'sucursal'
+});
+
 // ======================
 // Exportar todos los modelos y sequelize
 // ======================
 module.exports = {
-  sequelize,                // instancia de Sequelize
+  sequelize,
 
-  // Modelos existentes:
+  // Modelos existentes
   Productos,
   Inventario,
   MovimientosInventario,
   Categorias,
   Marcas,
   Proveedores,
-
-  // Nuevos modelos:
   Usuario,
   Pedidos,
-  DetallesPedido
+  DetallesPedido,
+
+  // Nuevo modelo
+  Sucursales
 };

@@ -1,17 +1,59 @@
 const express = require('express');
 const router = express.Router();
 
-// Importar los modelos
+// Importar modelos
 const { Inventario, Productos, MovimientosInventario } = require('../models');
 
-// ✅ Obtener todo el inventario (con detalles de productos)
+console.log('🔔 inventarioRoutes cargadas');
+
+// Crear nuevo inventario
+router.post('/', async (req, res) => {
+  try {
+    const {
+      ID_Producto,
+      ID_Sucursal,
+      Stock_Actual,
+      Stock_Minimo,
+      Stock_Maximo,
+      Stock_Reservado = 0
+    } = req.body;
+
+    if (!ID_Producto || !ID_Sucursal) {
+      return res.status(400).json({ message: 'ID_Producto e ID_Sucursal son obligatorios' });
+    }
+    if (Stock_Actual == null || Stock_Minimo == null || Stock_Maximo == null) {
+      return res.status(400).json({ message: 'Stock_Actual, Stock_Minimo y Stock_Maximo son obligatorios' });
+    }
+
+    const inventarioExistente = await Inventario.findOne({ where: { ID_Producto, ID_Sucursal } });
+
+    if (inventarioExistente) {
+      return res.status(409).json({ message: 'Ya existe inventario para ese producto en esa sucursal' });
+    }
+
+    const nuevoInventario = await Inventario.create({
+      ID_Producto,
+      ID_Sucursal,
+      Stock_Actual,
+      Stock_Minimo,
+      Stock_Maximo,
+      Stock_Reservado
+    });
+
+    res.status(201).json({
+      message: 'Inventario creado correctamente',
+      inventario: nuevoInventario
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtener todo el inventario con detalles de productos
 router.get('/', async (req, res) => {
   try {
     const inventario = await Inventario.findAll({
-      include: [{
-        model: Productos,
-        as: 'producto'
-      }]
+      include: [{ model: Productos, as: 'producto' }]
     });
     res.json(inventario);
   } catch (error) {
@@ -19,15 +61,12 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ✅ Obtener inventario filtrado por sucursal
+// Obtener inventario filtrado por sucursal
 router.get('/sucursal/:sucursalId', async (req, res) => {
   try {
     const inventario = await Inventario.findAll({
       where: { ID_Sucursal: req.params.sucursalId },
-      include: [{
-        model: Productos,
-        as: 'producto'
-      }]
+      include: [{ model: Productos, as: 'producto' }]
     });
     res.json(inventario);
   } catch (error) {
@@ -35,16 +74,13 @@ router.get('/sucursal/:sucursalId', async (req, res) => {
   }
 });
 
-// ✅ Obtener inventario específico de un producto en una sucursal
+// Obtener inventario específico de un producto en una sucursal
 router.get('/producto/:productoId/sucursal/:sucursalId', async (req, res) => {
   try {
     const { productoId, sucursalId } = req.params;
 
     const inventario = await Inventario.findOne({
-      where: {
-        ID_Producto: productoId,
-        ID_Sucursal: sucursalId
-      },
+      where: { ID_Producto: productoId, ID_Sucursal: sucursalId },
       include: [{
         model: Productos,
         as: 'producto',
@@ -66,23 +102,23 @@ router.get('/producto/:productoId/sucursal/:sucursalId', async (req, res) => {
   }
 });
 
-// ✅ Actualizar stock (entrada o salida) — usado desde API Banco
+// Actualizar stock (entrada o salida)
 router.post('/actualizar-stock', async (req, res) => {
   try {
     const { ID_Producto, ID_Sucursal, cantidad, tipo } = req.body;
 
-    const inventario = await Inventario.findOne({
-      where: {
-        ID_Producto,
-        ID_Sucursal
-      }
-    });
+    if (!ID_Producto || !ID_Sucursal || !cantidad || !tipo) {
+      return res.status(400).json({ message: 'Faltan parámetros obligatorios' });
+    }
+    if (typeof cantidad !== 'number' || cantidad <= 0) {
+      return res.status(400).json({ message: 'La cantidad debe ser un número mayor que cero' });
+    }
 
+    const inventario = await Inventario.findOne({ where: { ID_Producto, ID_Sucursal } });
     if (!inventario) {
       return res.status(404).json({ message: 'Inventario no encontrado' });
     }
 
-    // Actualiza el stock
     if (tipo === 'salida') {
       if (inventario.Stock_Actual < cantidad) {
         return res.status(400).json({ message: 'Stock insuficiente para la salida' });
@@ -96,6 +132,14 @@ router.post('/actualizar-stock', async (req, res) => {
 
     await inventario.save();
 
+    // Registrar movimiento en MovimientosInventario
+    await MovimientosInventario.create({
+      ID_Inventario: inventario.ID_Inventario,
+      Cantidad: cantidad,
+      Tipo_Movimiento: tipo,
+      Fecha_Movimiento: new Date()
+    });
+
     res.json({
       message: 'Stock actualizado correctamente',
       inventario
@@ -105,7 +149,7 @@ router.post('/actualizar-stock', async (req, res) => {
   }
 });
 
-// 🔄 Ruta para eliminar inventario por producto y sus movimientos asociados
+// Eliminar inventario y movimientos asociados por producto
 router.delete('/producto/:productoId', async (req, res) => {
   try {
     const inventarios = await Inventario.findAll({
@@ -122,22 +166,22 @@ router.delete('/producto/:productoId', async (req, res) => {
     const idsInventario = inventarios.map(inv => inv.ID_Inventario);
 
     // Eliminar movimientos asociados
-    await MovimientosInventario.destroy({
-      where: { ID_Inventario: idsInventario }
-    });
+    await MovimientosInventario.destroy({ where: { ID_Inventario: idsInventario } });
 
     // Eliminar inventario
-    const deletedCount = await Inventario.destroy({
-      where: { ID_Producto: req.params.productoId }
-    });
+    const deletedCount = await Inventario.destroy({ where: { ID_Producto: req.params.productoId } });
 
     res.status(200).json({
       success: true,
       message: `${deletedCount} registros de inventario eliminados para el producto ID ${req.params.productoId}`
     });
   } catch (error) {
-    console.error('Error al eliminar registros de inventario por producto:', error);
-    res.status(500).json({ success: false, message: 'Error al eliminar registros de inventario', error: error.message });
+    console.error('Error al eliminar inventario por producto:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar registros de inventario',
+      error: error.message
+    });
   }
 });
 

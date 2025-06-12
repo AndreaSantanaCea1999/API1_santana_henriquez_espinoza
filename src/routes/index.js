@@ -1,29 +1,27 @@
 const express = require('express');
 const router = express.Router();
 
-// ========================
-// 🔁 Importar rutas por módulo
-// ========================
+// Importar rutas por módulo
 const productosRoutes = require('./productosRoutes');
 const categoriasRoutes = require('./categoriasRoutes');
 const marcasRoutes = require('./marcasRoutes');
 const proveedoresRoutes = require('./proveedoresRoutes');
-const inventarioRoutes = require('./inventarioRoutes');
+const inventarioRoutes = require('./inventarioRoutes'); // Asegúrate que este archivo exista
 const movimientosInventarioRoutes = require('./movimientosInventarioRoutes');
 const divisasRoutes = require('./divisasRoutes');
 const usuariosRoutes = require('./usuariosRoutes');
 const pedidosRoutes = require('./pedidosRoutes');
+const sucursalesRoutes = require('./sucursalesRoutes');
 
-// ========================
-// 🔎 Ruta de prueba
-// ========================
+// Logs para debug
+console.log('🔔 Montando rutas principales...');
+
+// Ruta de prueba
 router.get('/test', (req, res) => {
   res.json({ message: '✅ API de inventario funcionando correctamente' });
 });
 
-// ========================
-// 📘 Ruta principal de documentación de la API
-// ========================
+// Ruta principal de documentación de la API
 router.get('/', (req, res) => {
   res.json({ 
     message: '📦 API FERREMAS - Sistema de Inventario y Ventas',
@@ -39,14 +37,13 @@ router.get('/', (req, res) => {
       movimientos: '/api/movimientos',
       divisas: '/api/divisas',
       usuarios: '/api/usuarios',
-      pedidos: '/api/pedidos'
+      pedidos: '/api/pedidos',
+      sucursales: '/api/sucursales'
     }
   });
 });
 
-// ========================
-// 🚀 Montar rutas (agrupadas por módulo lógico)
-// ========================
+// Montar rutas
 router.use('/productos', productosRoutes);
 router.use('/categorias', categoriasRoutes);
 router.use('/marcas', marcasRoutes);
@@ -56,5 +53,6 @@ router.use('/movimientos', movimientosInventarioRoutes);
 router.use('/divisas', divisasRoutes);
 router.use('/usuarios', usuariosRoutes);
 router.use('/pedidos', pedidosRoutes);
+router.use('/sucursales', sucursalesRoutes);
 
 module.exports = router;

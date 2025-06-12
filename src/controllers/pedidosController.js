@@ -7,7 +7,7 @@ const generarCodigoPedido = async () => {
   const año = fecha.getFullYear().toString().slice(-2);
   const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
   const dia = fecha.getDate().toString().padStart(2, '0');
-  
+
   const ultimoPedido = await Pedidos.findOne({
     where: {
       Codigo_Pedido: {
@@ -16,23 +16,22 @@ const generarCodigoPedido = async () => {
     },
     order: [['Codigo_Pedido', 'DESC']]
   });
-  
+
   let numero = 1;
   if (ultimoPedido) {
     const ultimoNumero = parseInt(ultimoPedido.Codigo_Pedido.slice(-3));
     numero = ultimoNumero + 1;
   }
-  
+
   return `PED${año}${mes}${dia}${numero.toString().padStart(3, '0')}`;
 };
 
-// Obtener todos los pedidos
+// Obtener todos los pedidos con filtros y paginación
 exports.getAllPedidos = async (req, res) => {
   try {
     const { estado, cliente, fechaInicio, fechaFin, page = 1, limit = 20 } = req.query;
-    
+
     let whereClause = {};
-    
     if (estado) whereClause.Estado = estado;
     if (cliente) whereClause.ID_Cliente = cliente;
     if (fechaInicio && fechaFin) {
@@ -40,9 +39,9 @@ exports.getAllPedidos = async (req, res) => {
         [Op.between]: [new Date(fechaInicio), new Date(fechaFin)]
       };
     }
-    
+
     const offset = (page - 1) * limit;
-    
+
     const { count, rows: pedidos } = await Pedidos.findAndCountAll({
       where: whereClause,
       include: [
@@ -58,7 +57,7 @@ exports.getAllPedidos = async (req, res) => {
       offset: parseInt(offset),
       order: [['Fecha_Pedido', 'DESC']]
     });
-    
+
     return res.status(200).json({
       success: true,
       count: pedidos.length,
@@ -81,7 +80,7 @@ exports.getAllPedidos = async (req, res) => {
 exports.getPedidoById = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const pedido = await Pedidos.findByPk(id, {
       include: [
         { model: Usuario, as: 'cliente', attributes: ['ID_Usuario', 'Nombre', 'Email', 'RUT', 'Telefono'] },
@@ -93,14 +92,14 @@ exports.getPedidoById = async (req, res) => {
         }
       ]
     });
-    
+
     if (!pedido) {
       return res.status(404).json({
         success: false,
         error: 'Pedido no encontrado'
       });
     }
-    
+
     return res.status(200).json({
       success: true,
       data: pedido
@@ -118,7 +117,7 @@ exports.getPedidoById = async (req, res) => {
 // Crear un nuevo pedido
 exports.createPedido = async (req, res) => {
   const t = await sequelize.transaction();
-  
+
   try {
     const {
       ID_Cliente,
@@ -132,7 +131,7 @@ exports.createPedido = async (req, res) => {
       Comentarios,
       detalles = []
     } = req.body;
-    
+
     if (!ID_Cliente || !detalles.length) {
       await t.rollback();
       return res.status(400).json({
@@ -140,8 +139,7 @@ exports.createPedido = async (req, res) => {
         error: 'ID_Cliente y detalles son obligatorios'
       });
     }
-    
-    // Verificar cliente
+
     const cliente = await Usuario.findByPk(ID_Cliente, { transaction: t });
     if (!cliente) {
       await t.rollback();
@@ -150,15 +148,14 @@ exports.createPedido = async (req, res) => {
         error: 'Cliente no encontrado'
       });
     }
-    
-    // Verificar stock y calcular totales
+
     let subtotal = 0;
     let impuestosTotal = 0;
     const detallesValidados = [];
-    
+
     for (const detalle of detalles) {
       const { ID_Producto, Cantidad, Descuento = 0 } = detalle;
-      
+
       const producto = await Productos.findByPk(ID_Producto, { transaction: t });
       if (!producto) {
         await t.rollback();
@@ -167,13 +164,12 @@ exports.createPedido = async (req, res) => {
           error: `Producto con ID ${ID_Producto} no encontrado`
         });
       }
-      
-      // Verificar stock
+
       const inventario = await Inventario.findOne({
         where: { ID_Producto, ID_Sucursal },
         transaction: t
       });
-      
+
       if (!inventario || inventario.Stock_Actual < Cantidad) {
         await t.rollback();
         return res.status(400).json({
@@ -181,18 +177,17 @@ exports.createPedido = async (req, res) => {
           error: `Stock insuficiente para ${producto.Nombre}`
         });
       }
-      
-      // Calcular precios
+
       const precioUnitario = parseFloat(producto.Precio_Venta);
       const descuentoLinea = parseFloat(Descuento) || 0;
       const impuestoPorcentaje = parseFloat(producto.Tasa_Impuesto) || 19;
-      
+
       const subtotalLinea = (precioUnitario * Cantidad) - descuentoLinea;
       const impuestoLinea = (subtotalLinea * impuestoPorcentaje) / 100;
-      
+
       subtotal += subtotalLinea;
       impuestosTotal += impuestoLinea;
-      
+
       detallesValidados.push({
         ID_Producto,
         Cantidad,
@@ -202,11 +197,10 @@ exports.createPedido = async (req, res) => {
         Subtotal: subtotalLinea + impuestoLinea
       });
     }
-    
+
     const total = subtotal + impuestosTotal;
     const codigoPedido = await generarCodigoPedido();
-    
-    // Crear pedido
+
     const nuevoPedido = await Pedidos.create({
       Codigo_Pedido: codigoPedido,
       ID_Cliente,
@@ -227,27 +221,24 @@ exports.createPedido = async (req, res) => {
       ID_Divisa: 1,
       Fecha_Estimada_Entrega: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     }, { transaction: t });
-    
-    // Crear detalles y reservar stock
+
     for (const detalle of detallesValidados) {
       await DetallesPedido.create({
         ID_Pedido: nuevoPedido.ID_Pedido,
         ...detalle
       }, { transaction: t });
-      
-      // Reservar stock
+
       const inventario = await Inventario.findOne({
         where: { ID_Producto: detalle.ID_Producto, ID_Sucursal },
         transaction: t
       });
-      
+
       await inventario.update({
         Stock_Actual: inventario.Stock_Actual - detalle.Cantidad,
         Stock_Reservado: inventario.Stock_Reservado + detalle.Cantidad,
         Ultima_Actualizacion: new Date()
       }, { transaction: t });
-      
-      // Crear movimiento
+
       await MovimientosInventario.create({
         ID_Inventario: inventario.ID_Inventario,
         Tipo_Movimiento: 'Reserva',
@@ -256,9 +247,9 @@ exports.createPedido = async (req, res) => {
         Comentario: `Reserva para pedido ${codigoPedido}`
       }, { transaction: t });
     }
-    
+
     await t.commit();
-    
+
     return res.status(201).json({
       success: true,
       message: 'Pedido creado exitosamente',
@@ -279,37 +270,50 @@ exports.createPedido = async (req, res) => {
 exports.updateEstadoPedido = async (req, res) => {
   try {
     const { id } = req.params;
-    const { Estado } = req.body;
-    
+    const { Estado: nuevoEstado } = req.body;
+
     const estadosValidos = ['Pendiente', 'Aprobado', 'En_Preparacion', 'Listo_Para_Entrega', 'En_Ruta', 'Entregado', 'Cancelado', 'Devuelto'];
-    
-    if (!Estado || !estadosValidos.includes(Estado)) {
+
+    if (!nuevoEstado || !estadosValidos.includes(nuevoEstado)) {
       return res.status(400).json({
         success: false,
         error: 'Estado no válido'
       });
     }
-    
+
     const pedido = await Pedidos.findByPk(id);
-    
+
     if (!pedido) {
       return res.status(404).json({
         success: false,
         error: 'Pedido no encontrado'
       });
     }
-    
+
+    if (pedido.Estado === nuevoEstado) {
+      return res.status(200).json({
+        success: false,
+        message: `El estado del pedido ya es '${nuevoEstado}'. No se realizó ningún cambio.`,
+        data: {
+          ID_Pedido: pedido.ID_Pedido,
+          Codigo_Pedido: pedido.Codigo_Pedido,
+          Estado_Anterior: pedido.Estado,
+          Estado_Nuevo: nuevoEstado
+        }
+      });
+    }
+
     const estadoAnterior = pedido.Estado;
-    await pedido.update({ Estado });
-    
+    await pedido.update({ Estado: nuevoEstado });
+
     return res.status(200).json({
       success: true,
-      message: `Estado actualizado de ${estadoAnterior} a ${Estado}`,
+      message: `Estado actualizado de ${estadoAnterior} a ${nuevoEstado}`,
       data: {
         ID_Pedido: pedido.ID_Pedido,
         Codigo_Pedido: pedido.Codigo_Pedido,
         Estado_Anterior: estadoAnterior,
-        Estado_Nuevo: Estado
+        Estado_Nuevo: nuevoEstado
       }
     });
   } catch (error) {
@@ -322,19 +326,18 @@ exports.updateEstadoPedido = async (req, res) => {
   }
 };
 
-// Cancelar un pedido
+// Cancelar un pedido y liberar stock reservado
 exports.cancelarPedido = async (req, res) => {
   const t = await sequelize.transaction();
-  
+
   try {
     const { id } = req.params;
-    const { motivo = 'Cancelado por el usuario' } = req.body;
-    
+
     const pedido = await Pedidos.findByPk(id, {
       include: [{ model: DetallesPedido, as: 'detalles' }],
       transaction: t
     });
-    
+
     if (!pedido) {
       await t.rollback();
       return res.status(404).json({
@@ -342,50 +345,44 @@ exports.cancelarPedido = async (req, res) => {
         error: 'Pedido no encontrado'
       });
     }
-    
-    if (['Entregado', 'Cancelado'].includes(pedido.Estado)) {
+
+    if (pedido.Estado === 'Cancelado' || pedido.Estado === 'Devuelto') {
       await t.rollback();
       return res.status(400).json({
         success: false,
-        error: `No se puede cancelar un pedido en estado ${pedido.Estado}`
+        error: 'Pedido ya está cancelado o devuelto'
       });
     }
-    
-    // Liberar stock reservado
+
     for (const detalle of pedido.detalles) {
       const inventario = await Inventario.findOne({
         where: { ID_Producto: detalle.ID_Producto, ID_Sucursal: pedido.ID_Sucursal },
         transaction: t
       });
-      
+
       if (inventario) {
         await inventario.update({
           Stock_Actual: inventario.Stock_Actual + detalle.Cantidad,
-          Stock_Reservado: Math.max(0, inventario.Stock_Reservado - detalle.Cantidad),
+          Stock_Reservado: Math.max(inventario.Stock_Reservado - detalle.Cantidad, 0),
           Ultima_Actualizacion: new Date()
         }, { transaction: t });
-        
+
         await MovimientosInventario.create({
           ID_Inventario: inventario.ID_Inventario,
-          Tipo_Movimiento: 'Entrada',
+          Tipo_Movimiento: 'CancelacionPedido',
           Cantidad: detalle.Cantidad,
           ID_Pedido: pedido.ID_Pedido,
-          Comentario: `Devolución por cancelación: ${motivo}`
+          Comentario: `Liberación stock por cancelación pedido ${pedido.Codigo_Pedido}`
         }, { transaction: t });
       }
     }
-    
+
     await pedido.update({ Estado: 'Cancelado' }, { transaction: t });
     await t.commit();
-    
+
     return res.status(200).json({
       success: true,
-      message: 'Pedido cancelado exitosamente y stock liberado',
-      data: {
-        ID_Pedido: pedido.ID_Pedido,
-        Codigo_Pedido: pedido.Codigo_Pedido,
-        Estado: 'Cancelado'
-      }
+      message: 'Pedido cancelado y stock liberado'
     });
   } catch (error) {
     await t.rollback();
@@ -398,31 +395,23 @@ exports.cancelarPedido = async (req, res) => {
   }
 };
 
-// Estadísticas básicas
+// Obtener estadísticas de pedidos
 exports.getEstadisticasPedidos = async (req, res) => {
   try {
-    const estadisticasPorEstado = await Pedidos.findAll({
+    const estadisticas = await Pedidos.findAll({
       attributes: [
         'Estado',
-        [sequelize.fn('COUNT', sequelize.col('ID_Pedido')), 'cantidad'],
-        [sequelize.fn('SUM', sequelize.col('Total')), 'montoTotal']
+        [sequelize.fn('COUNT', sequelize.col('ID_Pedido')), 'cantidad']
       ],
       group: ['Estado']
     });
-    
-    const totalPedidos = await Pedidos.count();
-    const montoTotalVentas = await Pedidos.sum('Total') || 0;
-    
+
     return res.status(200).json({
       success: true,
-      data: {
-        totalPedidos,
-        montoTotalVentas,
-        estadisticasPorEstado
-      }
+      data: estadisticas
     });
   } catch (error) {
-    console.error('Error al obtener estadísticas:', error);
+    console.error('Error al obtener estadísticas de pedidos:', error);
     return res.status(500).json({
       success: false,
       error: 'Error al obtener estadísticas',
