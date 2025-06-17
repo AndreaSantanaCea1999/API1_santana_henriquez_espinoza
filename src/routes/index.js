@@ -1,3 +1,4 @@
+// src/routes/index.js
 const express = require('express');
 const router = express.Router();
 
@@ -52,7 +53,7 @@ router.use('/inventario', inventarioRoutes);
 router.use('/movimientos', movimientosInventarioRoutes);
 router.use('/divisas', divisasRoutes);
 router.use('/usuarios', usuariosRoutes);
-router.use('/pedidos', pedidosRoutes);
+router.use('/pedidos', pedidosRoutes);  // <-- Agregado pedidosRoutes aquí
 router.use('/sucursales', sucursalesRoutes);
 
 module.exports = router;

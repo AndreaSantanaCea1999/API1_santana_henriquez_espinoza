@@ -419,3 +419,42 @@ exports.getEstadisticasPedidos = async (req, res) => {
     });
   }
 };
+
+// --- FUNCIONES AGREGADAS ---
+
+// Obtener stock disponible para un producto en una sucursal
+exports.obtenerStockProducto = async (req, res) => {
+  try {
+    const { ID_Producto, ID_Sucursal } = req.params;
+
+    if (!ID_Producto || !ID_Sucursal) {
+      return res.status(400).json({
+        success: false,
+        error: 'ID_Producto y ID_Sucursal son obligatorios'
+      });
+    }
+
+    const inventario = await Inventario.findOne({
+      where: { ID_Producto, ID_Sucursal }
+    });
+
+    if (!inventario) {
+      return res.status(404).json({
+        success: false,
+        error: 'Inventario no encontrado para el producto y sucursal especificados'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      stock: inventario.Stock_Actual
+    });
+  } catch (error) {
+    console.error('Error al obtener stock:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Error al obtener stock',
+      message: error.message
+    });
+  }
+};
