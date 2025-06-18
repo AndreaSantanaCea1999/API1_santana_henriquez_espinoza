@@ -447,7 +447,8 @@ exports.obtenerStockProducto = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      stock: inventario.Stock_Actual
+      message: 'Stock obtenido correctamente.', // Mensaje agregado
+      stock: inventario.Stock_Actual,
     });
   } catch (error) {
     console.error('Error al obtener stock:', error);

@@ -68,7 +68,12 @@ router.get('/sucursal/:sucursalId', async (req, res) => {
       where: { ID_Sucursal: req.params.sucursalId },
       include: [{ model: Productos, as: 'producto' }]
     });
-    res.json(inventario);
+    // Enviar respuesta con mensaje de éxito
+    res.status(200).json({
+      success: true,
+      message: `Inventario de la sucursal ${req.params.sucursalId} obtenido correctamente.`,
+      data: inventario
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -132,11 +137,18 @@ router.post('/actualizar-stock', async (req, res) => {
 
     await inventario.save();
 
+    // Convertir el tipo de movimiento a la capitalización esperada por el modelo MovimientosInventario
+    let tipoMovimientoCapitalizado = '';
+    if (tipo === 'entrada') {
+      tipoMovimientoCapitalizado = 'Entrada';
+    } else if (tipo === 'salida') {
+      tipoMovimientoCapitalizado = 'Salida';
+    }
     // Registrar movimiento en MovimientosInventario
     await MovimientosInventario.create({
       ID_Inventario: inventario.ID_Inventario,
       Cantidad: cantidad,
-      Tipo_Movimiento: tipo,
+      Tipo_Movimiento: tipoMovimientoCapitalizado, // Usar el valor capitalizado
       Fecha_Movimiento: new Date()
     });
 

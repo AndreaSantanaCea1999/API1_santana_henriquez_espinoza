@@ -1,4 +1,4 @@
-const { Sucursales, Inventario, Productos } = require('../models');
+const { Sucursales, Inventario, Productos, Pedidos } = require('../models');
 
 // ✅ Obtener todas las sucursales
 const getAllSucursales = async (req, res) => {
@@ -117,6 +117,55 @@ const toggleEstadoSucursal = async (req, res) => {
   }
 };
 
+// ✅ Eliminar sucursal (físicamente, con validaciones)
+const deleteSucursal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sucursal = await Sucursales.findByPk(id);
+
+    if (!sucursal) {
+      return res.status(404).json({
+        success: false,
+        message: 'Sucursal no encontrada'
+      });
+    }
+
+    // Validar que no tenga inventario asociado
+    const inventarioAsociado = await Inventario.findOne({ where: { ID_Sucursal: id } });
+    if (inventarioAsociado) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede eliminar la sucursal porque tiene inventario asociado. Primero elimine o transfiera el inventario.'
+      });
+    }
+
+    // Validar que no tenga pedidos asociados (pendientes o en proceso)
+    const pedidosAsociados = await Pedidos.findOne({
+      where: {
+        ID_Sucursal: id,
+        Estado: ['Pendiente', 'Aprobado', 'En_Preparacion', 'Listo_Para_Entrega', 'En_Ruta']
+      }
+    });
+    if (pedidosAsociados) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede eliminar la sucursal porque tiene pedidos activos asociados. Complete o cancele los pedidos primero.'
+      });
+    }
+
+    await sucursal.destroy();
+
+    res.status(200).json({ success: true, message: 'Sucursal eliminada exitosamente' });
+  } catch (error) {
+    console.error('Error al eliminar sucursal:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar la sucursal',
+      error: error.message
+    });
+  }
+};
+
 // ✅ Obtener inventario de una sucursal
 const getInventarioBySucursal = async (req, res) => {
   try {
@@ -138,6 +187,7 @@ const getInventarioBySucursal = async (req, res) => {
     });
     res.status(200).json({
       success: true,
+      message: `Inventario de la sucursal ${sucursal.Nombre} (ID: ${id}) obtenido correctamente.`, // Mensaje agregado
       sucursal: sucursal.Nombre,
       count: inventario.length,
       data: inventario
@@ -198,5 +248,6 @@ module.exports = {
   updateSucursal,
   toggleEstadoSucursal,
   getInventarioBySucursal,
-  getEstadisticasSucursal
+  getEstadisticasSucursal,
+  deleteSucursal // Exportar la nueva función
 };

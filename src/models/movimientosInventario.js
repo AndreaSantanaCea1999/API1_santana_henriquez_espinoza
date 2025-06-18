@@ -15,11 +15,9 @@ const MovimientosInventario = sequelize.define(
       allowNull: false
     },
     Tipo_Movimiento: {
-      type: DataTypes.STRING(30),
+       type: DataTypes.ENUM('Entrada', 'Salida', 'Ajuste', 'Reserva', 'Transferencia', 'CancelacionPedido'), // 'CancelacionPedido' agregado
       allowNull: false,
-      validate: {
-        isIn: [['Entrada', 'Salida', 'Ajuste', 'Reserva', 'Transferencia']]
-      }
+    
     },
     Cantidad: {
       type: DataTypes.INTEGER,
