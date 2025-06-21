@@ -24,6 +24,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
+// Ruta health para monitoreo del estado del servicio
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    uptime: process.uptime(),
+    message: 'API de Inventario y Ventas FERREMAS funcionando correctamente',
+    timestamp: Date.now()
+  });
+});
+
 // Ruta raíz (info básica de API)
 app.get('/', (req, res) => {
   res.status(200).json({
@@ -60,7 +70,7 @@ const startServer = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ Conexión a la base de datos establecida');
-    
+
     await sequelize.sync({ alter: false }); // Usa alter: true solo en desarrollo
     console.log('📦 Modelos sincronizados correctamente');
 
